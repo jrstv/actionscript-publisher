@@ -57,8 +57,10 @@ package {
       this.statusTxt.height = this.streamHeight;
       addChild(this.statusTxt);
 
-      this.oVideo = new Video(this.streamWidth, this.streamHeight);
+      this.oCamera = Camera.getCamera();
+      this.oVideo = new Video(this.oCamera.width, this.oCamera.height);
       this.addChild(this.oVideo);
+
       this.oConnection = new NetConnection();
       this.oConnection.addEventListener(NetStatusEvent.NET_STATUS, eNetStatus, false, 0, true);
       this.oConnection.objectEncoding = ObjectEncoding.AMF0;
@@ -79,8 +81,8 @@ package {
         ExternalInterface.addCallback("setStreamFPS", this.setStreamFPS);
       	ExternalInterface.addCallback("getBandwidth", this.getBandwidth);
       	ExternalInterface.addCallback("setBandwidth", this.setBandwidth);
-      	ExternalInterface.addCallback("connect", this.connect);
-      	ExternalInterface.addCallback("disconnect", this.disconnect);
+      	ExternalInterface.addCallback("start", this.start);
+      	ExternalInterface.addCallback("stop", this.stop);
     	} else {
     		debug("External interface not available)");
     	}
@@ -134,7 +136,7 @@ package {
 
     public function setBandwidth(bandwidth:int):void {
       this.bandwidth = bandwidth;
-      debug("Bandwidth: " + this.bandwidth + "bps")
+      debug("Bandwidth: " + this.bandwidth + "Kbps")
     }
 
     public function getBandwidth():int {
@@ -169,13 +171,15 @@ package {
   	}
 
 
-  	public function connect():void {
+  	public function start():void {
   		debug("Connecting to url: " + this.sMediaServerURL);
   		this.oConnection.connect(this.sMediaServerURL);
   	}
 
-  	public function disconnect():void {
+  	public function stop():void {
+      this.oNetStream.close();
   		this.oConnection.close();
+      this.oVideo.attachCamera(null);
   	}
 
 
@@ -189,11 +193,10 @@ package {
     	debug("onFCPublish invoked: " + info.code);
     	if (info.code == "NetStream.Publish.Start"){
     		debug("Starting to Publish Stream");
-    		this.oCamera = Camera.getCamera();
-    		this.oCamera.setMode(this.streamWidth, this.streamHeight, this.streamFPS, true);
+        this.oCamera.setMode(this.oCamera.width, this.oCamera.height, this.streamFPS, false);
   			// bps, compression (0 = don't exceed bandwidth)
-  			this.oCamera.setQuality(this.bandwidth, 0);
-  			this.oCamera.setKeyFrameInterval(60);
+  			this.oCamera.setQuality(0, 90);
+  			this.oCamera.setKeyFrameInterval(this.streamFPS * 2);
 
   			debug("Container size " + this.width + "x" + this.height);
   			debug("Video size " + this.oVideo.width + "x" + this.oVideo.height);
@@ -207,7 +210,7 @@ package {
   			this.oMicrophone.encodeQuality = 5;
   			this.oMicrophone.framesPerPacket = 2;
 
-  			// attach the camera to the video..
+  			// attach the camera to the video
   			this.oVideo.attachCamera(this.oCamera);
 
   			this.oNetStream = new NetStream(this.oConnection);
