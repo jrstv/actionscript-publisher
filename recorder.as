@@ -54,6 +54,8 @@ package {
 
       // set up the camera and video object
       this.oCamera = Camera.getCamera();
+      // attempt to determine the best 16:9 aspect ratio and frame rate that the camera can support
+      this.oCamera.setMode(160000, 90000, 30, true);
       this.streamWidth = this.oCamera.width;
       this.streamHeight = this.oCamera.height;
       this.streamFPS = this.oCamera.fps;
@@ -214,7 +216,7 @@ package {
     	if (info.code == "NetStream.Publish.Start"){
     		console_log("About to Publish Stream");
 
-        this.oCamera.setMode(this.oCamera.width, this.streamHeight, this.streamFPS, false);
+        this.oCamera.setMode(this.streamWidth, this.streamHeight, this.streamFPS, true);
         // bytes per second, % quality
         this.oCamera.setQuality(this.bandwidth * 1024 / 8, this.cameraQuality);
         this.oCamera.setKeyFrameInterval(Math.max(this.streamFPS, 15));
@@ -246,7 +248,7 @@ package {
 
         console_log("Video dimensions: " + getVideoWidth() + "x" + getVideoHeight());
         console_log("Resolution: " + this.oCamera.width + "x" + this.oCamera.height);
-        console_log("Frames rate: " + this.oCamera.fps + "fps");
+        console_log("Frame rate: " + this.oCamera.fps + "fps");
         console_log("Keyframe interval: " + this.oCamera.keyFrameInterval);
         console_log("Bandwidth: " + this.oCamera.bandwidth * 8 / 1024 + "Kbps");
         console_log("Quality: " + this.oCamera.quality + "%");
