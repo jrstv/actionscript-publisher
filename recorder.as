@@ -22,7 +22,6 @@ package {
 
   public class recorder extends Sprite {
   	protected var sMediaServerURL:String;
-    protected var sInstanceName:String;
     protected var sEventName:String;
     protected var sStreamName:String;
   	protected var sStreamKey:String;
@@ -75,8 +74,6 @@ package {
       	ExternalInterface.addCallback("trace", this.console_log);
       	ExternalInterface.addCallback("setUrl", this.setUrl);
       	ExternalInterface.addCallback("getUrl", this.getUrl);
-        ExternalInterface.addCallback("setInstanceName", this.setInstanceName);
-        ExternalInterface.addCallback("getInstanceName", this.getInstanceName);
         ExternalInterface.addCallback("setEventName", this.setEventName);
         ExternalInterface.addCallback("getEventName", this.getEventName);
         ExternalInterface.addCallback("setStreamName", this.setStreamName);
@@ -110,7 +107,7 @@ package {
     }
 
     protected function getStreamEndpoint():String {
-      return this.sInstanceName + "/" + this.sStreamName + "?" + this.sStreamKey + "&adbe-live-event=" + this.sEventName;
+      return this.sStreamName + "?" + this.sStreamKey + "&adbe-live-event=" + this.sEventName;
     }
 
   	// External APIs -- invoked from JavaScript
@@ -122,15 +119,6 @@ package {
   	public function getUrl():String {
   		return this.sMediaServerURL;
   	}
-
-
-    public function setInstanceName(instanceName:String):void {
-      this.sInstanceName = instanceName;
-    }
-
-    public function getInstanceName():String {
-      return this.sInstanceName;
-    }
 
 
     public function setEventName(eventName:String):void {
