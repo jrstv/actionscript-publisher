@@ -47,10 +47,10 @@ package {
   	}
 
   	public function recorder() {
+      console_log("Initialized.");
+
       // EdgeCast's FMS usees the FCPublish protocol after connecting before streaming
       NetConnection.prototype.onFCPublish = onFCPublish;
-
-      console_log("recorder object has been created.");
 
       // set up the camera and video object
       this.oCamera = Camera.getCamera();
