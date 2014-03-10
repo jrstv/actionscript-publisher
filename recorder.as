@@ -39,28 +39,23 @@ package {
   	private var oMicrophone:Microphone;
   	private var statusTxt:TextField = new TextField();
 
-  	public function debug(string:String):void {
+  	public function console_log(string:String):void {
   		ExternalInterface.call("console.log", string);
   		this.statusTxt.text = string;
   	}
 
   	public function recorder() {
-      // some media servers are dumb, so we need to catch a strange event
-  		NetConnection.prototype.onBWDone = function(oObject1:Object):void {
-        debug("onBWDone: " + oObject1.toString());
-      }
-
       // EdgeCast's FMS usees the FCPublish protocol after connecting before streaming
       NetConnection.prototype.onFCPublish = onFCPublish;
 
-      debug("recorder object has been created.");
+      console_log("recorder object has been created.");
 
       // set up the camera and video object
       this.oCamera = Camera.getCamera();
       this.streamWidth = this.oCamera.width;
       this.streamHeight = this.oCamera.height;
       this.streamFPS = this.oCamera.fps;
-      this.oVideo = new Video(this.streamWidth, this.streamHeight);
+      this.oVideo = new Video();
       this.addChild(this.oVideo);
 
       // set up status text object
@@ -73,7 +68,7 @@ package {
       this.oConnection.objectEncoding = ObjectEncoding.AMF0;
 
       if (ExternalInterface.available) {
-      	ExternalInterface.addCallback("trace", this.debug);
+      	ExternalInterface.addCallback("trace", this.console_log);
       	ExternalInterface.addCallback("setUrl", this.setUrl);
       	ExternalInterface.addCallback("getUrl", this.getUrl);
         ExternalInterface.addCallback("setStreamName", this.setStreamName);
@@ -91,29 +86,25 @@ package {
       	ExternalInterface.addCallback("start", this.start);
       	ExternalInterface.addCallback("stop", this.stop);
     	} else {
-    		debug("External interface not available)");
+    		console_log("External interface not available)");
     	}
-
-  		// fix flash content resizing
-    	//import flash.display.*;
-  		//stage.align=StageAlign.TOP_LEFT;
-  		//stage.scaleMode=StageScaleMode.NO_SCALE;
-  		//stage.addEventListener(Event.RESIZE, updateSize);
-  		//stage.dispatchEvent(new Event(Event.RESIZE));
   	}
 
-  	//protected function updateSize(event:Event):void {
-  	//	this.oVideo.width = stage.stageWidth;
-  	//	this.oVideo.height = stage.stageHeight;
-  	//	this.statusTxt.width = stage.stageWidth;
-  	//	this.statusTxt.height = stage.stageHeight;
-  	//}
+    protected function getVideoWidth():int {
+      // match our video width to our height, but with the right aspect ratio
+      return Math.round(this.streamWidth / this.streamHeight * getVideoHeight());
+    }
+
+    protected function getVideoHeight():int {
+      // lock our height at 240px
+      return 240;
+    }
 
   	// External APIs -- invoked from JavaScript
 
   	public function setUrl(url:String):void {
   		this.sMediaServerURL = url;
-      debug("URL: " + this.sMediaServerURL)
+      console_log("URL: " + this.sMediaServerURL)
   	}
 
   	public function getUrl():String {
@@ -123,7 +114,7 @@ package {
 
     public function setStreamName(streamName:String):void {
       this.sStreamName = streamName;
-      debug("Stream Name: " + this.sStreamName)
+      console_log("Stream Name: " + this.sStreamName)
     }
 
     public function getStreamName():String {
@@ -133,7 +124,7 @@ package {
 
   	public function setStreamKey(streamKey:String):void {
   		this.sStreamKey = streamKey;
-      debug("Stream Key: " + this.sStreamKey)
+      console_log("Stream Key: " + this.sStreamKey)
   	}
 
   	public function getStreamKey():String {
@@ -178,7 +169,7 @@ package {
 
 
   	public function start():void {
-  		debug("Connecting to url: " + this.sMediaServerURL);
+  		console_log("Connecting to url: " + this.sMediaServerURL);
   		this.oConnection.connect(this.sMediaServerURL);
   	}
 
@@ -188,16 +179,17 @@ package {
       this.oVideo.attachCamera(null);
   	}
 
+
   	protected function eMetaDataReceived(oObject:Object):void {
-      debug("MetaData: " + oObject.toString());
+      console_log("MetaData: " + oObject.toString());
     }
 
     public function onFCPublish(info:Object):void {
       // how to force proper codecs:
       //   http://www.adobe.com/devnet/adobe-media-server/articles/encoding-live-video-h264.html
-    	debug("onFCPublish invoked: " + info.code);
+    	console_log("onFCPublish invoked: " + info.code);
     	if (info.code == "NetStream.Publish.Start"){
-    		debug("Starting to Publish Stream");
+    		console_log("About to Publish Stream");
 
         this.oCamera.setMode(this.oCamera.width, this.streamHeight, this.streamFPS, false);
         // bytes per second, % quality
@@ -212,6 +204,8 @@ package {
   			this.oMicrophone.framesPerPacket = 2;
 
   			// attach the camera to the video
+        this.oVideo.width = getVideoWidth();
+        this.oVideo.height = getVideoHeight();
   			this.oVideo.attachCamera(this.oCamera);
 
   			// attach the camera and microphone to the stream
@@ -227,15 +221,16 @@ package {
         h264Settings.setMode(this.oCamera.width, this.oCamera.height, this.oCamera.fps);
   			this.oNetStream.videoStreamSettings = h264Settings;
 
-        debug("Resolution: " + this.oCamera.width + "x" + this.oCamera.height);
-        debug("Frames rate: " + this.oCamera.fps + "fps");
-        debug("Keyframe interval: " + this.oCamera.keyFrameInterval);
-        debug("Bandwidth: " + this.oCamera.bandwidth * 8 / 1024 + "Kbps");
-        debug("Quality: " + this.oCamera.quality + "%");
+        console_log("Video dimensions: " + getVideoWidth() + "x" + getVideoHeight());
+        console_log("Resolution: " + this.oCamera.width + "x" + this.oCamera.height);
+        console_log("Frames rate: " + this.oCamera.fps + "fps");
+        console_log("Keyframe interval: " + this.oCamera.keyFrameInterval);
+        console_log("Bandwidth: " + this.oCamera.bandwidth * 8 / 1024 + "Kbps");
+        console_log("Quality: " + this.oCamera.quality + "%");
 
   			// start publishing the stream
+        console_log("Publishing to: " + this.sStreamName + "?" + this.sStreamKey);
   			this.oNetStream.addEventListener(NetStatusEvent.NET_STATUS, eNetStatus, false, 0, true);
-  			debug("publishing to: " + this.sStreamName + "?" + this.sStreamKey);
   			this.oNetStream.publish(this.sStreamName + "?" + this.sStreamKey);
 
   			// send metadata
@@ -254,31 +249,26 @@ package {
   			// listen for meta data..
   			this.oMetaData.onMetaData = eMetaDataReceived;
   			this.oNetStream.client = this.oMetaData;
-  			debug("Started Stream");
+  			console_log("Started Stream");
   		} else {
-  			debug("Error Occurred Publishing Stream");
+  			console_log("Error Occurred Publishing Stream");
   		}
   	}
 
   	private function eNetStatus(oEvent1:NetStatusEvent):void {
-  		debug("NetStatusEvent: " + oEvent1.info.code); // debug trace..
 
   		switch (oEvent1.info.code) {
   			case "NetConnection.Connect.Success":
   			  this.oConnection.call("FCPublish", null, this.sStreamName);
-  				debug("Connected to the RTMP server."); // debug trace..
+  				console_log("Connected to the RTMP server.");
   				break;
 
   			case "NetConnection.Connect.Closed":
-  				debug("Disconnected from the RTMP server."); // debug trace..
+  				console_log("Disconnected from the RTMP server.");
   				break;
 
-				case "NetConnection.Connect.Closed":
-					break;
-
 				default:
-					debug(oEvent1.info.code);
-					debug(oEvent1.info.description);
+          console_log("NetStatusEvent: " + oEvent1.info.code);
 					break;
 			} // switch()
 		} // function eNetStatus
