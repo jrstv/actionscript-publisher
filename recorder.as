@@ -42,7 +42,7 @@ package {
   	private var statusTxt:TextField = new TextField();
 
   	public function console_log(string:String):void {
-  		ExternalInterface.call("console.log", string);
+  		ExternalInterface.call("console.log", "recorder: " + string);
   		this.statusTxt.text = string;
   	}
 
@@ -114,7 +114,6 @@ package {
 
   	public function setUrl(url:String):void {
   		this.sMediaServerURL = url;
-      console_log("URL: " + this.sMediaServerURL)
   	}
 
   	public function getUrl():String {
@@ -211,9 +210,6 @@ package {
     }
 
     public function onFCPublish(info:Object):void {
-      // how to force proper codecs:
-      //   http://www.adobe.com/devnet/adobe-media-server/articles/encoding-live-video-h264.html
-    	console_log("onFCPublish invoked: " + info.code);
     	if (info.code == "NetStream.Publish.Start"){
     		console_log("About to Publish Stream");
 
@@ -269,29 +265,35 @@ package {
   			metaData.width = this.oCamera.width;
         metaData.height = this.oCamera.height;
   			metaData.keyFrameInterval = this.oCamera.keyFrameInterval;
-
   			this.oNetStream.send("@setDataFrame", "onMetaData", metaData);
 
-  			// listen for meta data..
+  			// listen for meta data
   			this.oMetaData.onMetaData = eMetaDataReceived;
   			this.oNetStream.client = this.oMetaData;
-  			console_log("Started Stream");
   		} else {
-  			console_log("Error Occurred Publishing Stream");
+  			console_log("Error occurred publishing stream: " + info.code);
   		}
   	}
 
   	private function eNetStatus(oEvent1:NetStatusEvent):void {
-
   		switch (oEvent1.info.code) {
   			case "NetConnection.Connect.Success":
+          console_log("Connected to the RTMP server.");
   			  this.oConnection.call("FCPublish", null, this.sStreamName);
-  				console_log("Connected to the RTMP server.");
   				break;
 
   			case "NetConnection.Connect.Closed":
   				console_log("Disconnected from the RTMP server.");
   				break;
+
+        case "NetStream.Publish.Start":
+          console_log("Publishing started.")
+          break;
+
+        case "NetStream.Failed":
+          console_log("Couldn't stream to endpoint.");
+          stop();
+          break;
 
 				default:
           console_log("NetStatusEvent: " + oEvent1.info.code);
