@@ -22,6 +22,8 @@ package {
 
   public class recorder extends Sprite {
   	protected var sMediaServerURL:String;
+    protected var sInstanceName:String;
+    protected var sEventName:String;
     protected var sStreamName:String;
   	protected var sStreamKey:String;
   	protected var streamWidth:int;
@@ -71,6 +73,10 @@ package {
       	ExternalInterface.addCallback("trace", this.console_log);
       	ExternalInterface.addCallback("setUrl", this.setUrl);
       	ExternalInterface.addCallback("getUrl", this.getUrl);
+        ExternalInterface.addCallback("setInstanceName", this.setInstanceName);
+        ExternalInterface.addCallback("getInstanceName", this.getInstanceName);
+        ExternalInterface.addCallback("setEventName", this.setEventName);
+        ExternalInterface.addCallback("getEventName", this.getEventName);
         ExternalInterface.addCallback("setStreamName", this.setStreamName);
         ExternalInterface.addCallback("getStreamName", this.getStreamName);
       	ExternalInterface.addCallback("setStreamKey", this.setStreamKey);
@@ -100,6 +106,10 @@ package {
       return 240;
     }
 
+    protected function getStreamEndpoint():String {
+      return this.sInstanceName + "/" + this.sStreamName + "?" + this.sStreamKey + "&adbe-live-event=" + this.sEventName;
+    }
+
   	// External APIs -- invoked from JavaScript
 
   	public function setUrl(url:String):void {
@@ -112,9 +122,26 @@ package {
   	}
 
 
+    public function setInstanceName(instanceName:String):void {
+      this.sInstanceName = instanceName;
+    }
+
+    public function getInstanceName():String {
+      return this.sInstanceName;
+    }
+
+
+    public function setEventName(eventName:String):void {
+      this.sEventName = eventName;
+    }
+
+    public function getEventName():String {
+      return this.sEventName;
+    }
+
+
     public function setStreamName(streamName:String):void {
       this.sStreamName = streamName;
-      console_log("Stream Name: " + this.sStreamName)
     }
 
     public function getStreamName():String {
@@ -124,7 +151,6 @@ package {
 
   	public function setStreamKey(streamKey:String):void {
   		this.sStreamKey = streamKey;
-      console_log("Stream Key: " + this.sStreamKey)
   	}
 
   	public function getStreamKey():String {
@@ -229,9 +255,9 @@ package {
         console_log("Quality: " + this.oCamera.quality + "%");
 
   			// start publishing the stream
-        console_log("Publishing to: " + this.sStreamName + "?" + this.sStreamKey);
+        console_log("Publishing to: " + getStreamEndpoint());
   			this.oNetStream.addEventListener(NetStatusEvent.NET_STATUS, eNetStatus, false, 0, true);
-  			this.oNetStream.publish(this.sStreamName + "?" + this.sStreamKey);
+  			this.oNetStream.publish(getStreamEndpoint());
 
   			// send metadata
   			var metaData:Object = new Object();
