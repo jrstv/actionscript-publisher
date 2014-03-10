@@ -47,7 +47,7 @@ package {
   	}
 
   	public function recorder() {
-      console_log("Initialized.");
+      console_log("Initializing.");
 
       // EdgeCast's FMS usees the FCPublish protocol after connecting before streaming
       NetConnection.prototype.onFCPublish = onFCPublish;
@@ -94,6 +94,7 @@ package {
     	} else {
     		console_log("External interface not available)");
     	}
+      console_log("Initialized.");
   	}
 
     protected function getVideoWidth():int {
