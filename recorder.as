@@ -21,13 +21,14 @@ package {
 
 
   public class recorder extends Sprite {
-  	protected var sMediaServerURL:String = "rtmp://127.0.0.1:1935/live";
-    protected var sStreamName:String = "foo";
-  	protected var sStreamKey:String = "bar";
-    protected var bandwidth:int = 2048;
-  	protected var streamWidth:int = 720;
-  	protected var streamHeight:int = 405;
-    protected var streamFPS:int = 30;
+  	protected var sMediaServerURL:String;
+    protected var sStreamName:String;
+  	protected var sStreamKey:String;
+  	protected var streamWidth:int;
+  	protected var streamHeight:int;
+    protected var streamFPS:int;
+    protected var cameraQuality:int = 90; // % percentage
+    protected var bandwidth:int = 2048; // Kbps
 
   	protected var oConnection:NetConnection;
   	protected var oMetaData:Object = new Object();
@@ -53,13 +54,19 @@ package {
       NetConnection.prototype.onFCPublish = onFCPublish;
 
       debug("recorder object has been created.");
+
+      // set up the camera and video object
+      this.oCamera = Camera.getCamera();
+      this.streamWidth = this.oCamera.width;
+      this.streamHeight = this.oCamera.height;
+      this.streamFPS = this.oCamera.fps;
+      this.oVideo = new Video(this.streamWidth, this.streamHeight);
+      this.addChild(this.oVideo);
+
+      // set up status text object
       this.statusTxt.width = this.streamWidth;
       this.statusTxt.height = this.streamHeight;
       addChild(this.statusTxt);
-
-      this.oCamera = Camera.getCamera();
-      this.oVideo = new Video(this.oCamera.width, this.oCamera.height);
-      this.addChild(this.oVideo);
 
       this.oConnection = new NetConnection();
       this.oConnection.addEventListener(NetStatusEvent.NET_STATUS, eNetStatus, false, 0, true);
@@ -88,19 +95,19 @@ package {
     	}
 
   		// fix flash content resizing
-  		import flash.display.*;
-  		stage.align=StageAlign.TOP_LEFT;
-  		stage.scaleMode=StageScaleMode.NO_SCALE;
-  		stage.addEventListener(Event.RESIZE, updateSize);
-  		stage.dispatchEvent(new Event(Event.RESIZE));
+    	//import flash.display.*;
+  		//stage.align=StageAlign.TOP_LEFT;
+  		//stage.scaleMode=StageScaleMode.NO_SCALE;
+  		//stage.addEventListener(Event.RESIZE, updateSize);
+  		//stage.dispatchEvent(new Event(Event.RESIZE));
   	}
 
-  	protected function updateSize(event:Event):void {
-  		this.oVideo.width = stage.stageWidth;
-  		this.oVideo.height = stage.stageHeight;
-  		this.statusTxt.width = stage.stageWidth;
-  		this.statusTxt.height = stage.stageHeight;
-  	}
+  	//protected function updateSize(event:Event):void {
+  	//	this.oVideo.width = stage.stageWidth;
+  	//	this.oVideo.height = stage.stageHeight;
+  	//	this.statusTxt.width = stage.stageWidth;
+  	//	this.statusTxt.height = stage.stageHeight;
+  	//}
 
   	// External APIs -- invoked from JavaScript
 
@@ -136,7 +143,6 @@ package {
 
     public function setBandwidth(bandwidth:int):void {
       this.bandwidth = bandwidth;
-      debug("Bandwidth: " + this.bandwidth + "Kbps")
     }
 
     public function getBandwidth():int {
@@ -182,7 +188,6 @@ package {
       this.oVideo.attachCamera(null);
   	}
 
-
   	protected function eMetaDataReceived(oObject:Object):void {
       debug("MetaData: " + oObject.toString());
     }
@@ -193,17 +198,13 @@ package {
     	debug("onFCPublish invoked: " + info.code);
     	if (info.code == "NetStream.Publish.Start"){
     		debug("Starting to Publish Stream");
-        this.oCamera.setMode(this.oCamera.width, this.oCamera.height, this.streamFPS, false);
-  			// bps, compression (0 = don't exceed bandwidth)
-  			this.oCamera.setQuality(0, 90);
-  			this.oCamera.setKeyFrameInterval(this.streamFPS * 2);
 
-  			debug("Container size " + this.width + "x" + this.height);
-  			debug("Video size " + this.oVideo.width + "x" + this.oVideo.height);
-  			debug("Camera size " + this.oCamera.width + "x" + this.oCamera.height);
+        this.oCamera.setMode(this.oCamera.width, this.streamHeight, this.streamFPS, false);
+        // bytes per second, % quality
+        this.oCamera.setQuality(this.bandwidth * 1024 / 8, this.cameraQuality);
+        this.oCamera.setKeyFrameInterval(Math.max(this.streamFPS, 15));
 
   			this.oMicrophone = Microphone.getMicrophone();
-
   			this.oMicrophone.codec = SoundCodec.SPEEX;
   			this.oMicrophone.rate = 44;
   			this.oMicrophone.setSilenceLevel(0);
@@ -213,35 +214,42 @@ package {
   			// attach the camera to the video
   			this.oVideo.attachCamera(this.oCamera);
 
-  			this.oNetStream = new NetStream(this.oConnection);
-  			// attach the camera and microphone to the stream..
-
+  			// attach the camera and microphone to the stream
+        this.oNetStream = new NetStream(this.oConnection);
   			this.oNetStream.attachCamera(this.oCamera);
   			this.oNetStream.attachAudio(this.oMicrophone);
 
+        // configure streaming settings -- match to camera settings
   			var h264Settings:H264VideoStreamSettings = new H264VideoStreamSettings();
-  			h264Settings.setProfileLevel(H264Profile.BASELINE, H264Level.LEVEL_3_1);
-
+  			h264Settings.setProfileLevel(H264Profile.MAIN, H264Level.LEVEL_3_1);
+        h264Settings.setQuality(this.oCamera.bandwidth, this.oCamera.quality);
+        h264Settings.setKeyFrameInterval(this.oCamera.keyFrameInterval);
+        h264Settings.setMode(this.oCamera.width, this.oCamera.height, this.oCamera.fps);
   			this.oNetStream.videoStreamSettings = h264Settings;
 
-  			// start publishing the stream..
+        debug("Resolution: " + this.oCamera.width + "x" + this.oCamera.height);
+        debug("Frames rate: " + this.oCamera.fps + "fps");
+        debug("Keyframe interval: " + this.oCamera.keyFrameInterval);
+        debug("Bandwidth: " + this.oCamera.bandwidth * 8 / 1024 + "Kbps");
+        debug("Quality: " + this.oCamera.quality + "%");
+
+  			// start publishing the stream
   			this.oNetStream.addEventListener(NetStatusEvent.NET_STATUS, eNetStatus, false, 0, true);
   			debug("publishing to: " + this.sStreamName + "?" + this.sStreamKey);
   			this.oNetStream.publish(this.sStreamName + "?" + this.sStreamKey);
 
   			// send metadata
   			var metaData:Object = new Object();
-
   			metaData.codec = this.oNetStream.videoStreamSettings.codec;
   			metaData.profile = h264Settings.profile;
   			metaData.level = h264Settings.level;
   			metaData.fps = this.oCamera.fps;
   			metaData.bandwith = this.oCamera.bandwidth;
-  			metaData.height = this.oCamera.height;
   			metaData.width = this.oCamera.width;
+        metaData.height = this.oCamera.height;
   			metaData.keyFrameInterval = this.oCamera.keyFrameInterval;
 
-  			this.oNetStream.send( "@setDataFrame", "onMetaData", metaData);
+  			this.oNetStream.send("@setDataFrame", "onMetaData", metaData);
 
   			// listen for meta data..
   			this.oMetaData.onMetaData = eMetaDataReceived;
