@@ -25,9 +25,10 @@ package {
     protected var sEventName:String;
     protected var sStreamName:String;
   	protected var sStreamKey:String;
-  	protected var streamWidth:int;
-  	protected var streamHeight:int;
-    protected var streamFPS:int;
+  	protected var streamWidth:int = 1280;
+  	protected var streamHeight:int = 720;
+    protected var streamFPS:int = 30;
+    protected var keyFrameInterval:int = 120;
     protected var cameraQuality:int = 90; // % percentage
     protected var bandwidth:int = 2048; // Kbps
 
@@ -45,11 +46,18 @@ package {
   		this.statusTxt.text = string;
   	}
 
+    public function recorder2():void {
+      var cam:Camera = Camera.getCamera();
+      var vid:Video = new Video();
+      vid.attachCamera(cam);
+      addChild(vid);
+    }
+
   	public function recorder() {
       console_log("Initializing.");
 
       // EdgeCast's FMS usees the FCPublish protocol after connecting before streaming
-      NetConnection.prototype.onFCPublish = onFCPublish;
+      //NetConnection.prototype.onFCPublish = onFCPublish;
 
       // set up the camera and video object
       this.oCamera = Camera.getCamera();
@@ -84,10 +92,14 @@ package {
       	ExternalInterface.addCallback("getStreamWidth", this.getStreamWidth);
       	ExternalInterface.addCallback("setStreamHeight", this.setStreamHeight);
       	ExternalInterface.addCallback("getStreamHeight", this.getStreamHeight);
+        ExternalInterface.addCallback("getBandwidth", this.getBandwidth);
+        ExternalInterface.addCallback("setBandwidth", this.setBandwidth);
         ExternalInterface.addCallback("getStreamFPS", this.getStreamFPS);
         ExternalInterface.addCallback("setStreamFPS", this.setStreamFPS);
-      	ExternalInterface.addCallback("getBandwidth", this.getBandwidth);
-      	ExternalInterface.addCallback("setBandwidth", this.setBandwidth);
+        ExternalInterface.addCallback("getKeyFrameInterval", this.getKeyFrameInterval);
+        ExternalInterface.addCallback("setKeyFrameInterval", this.setKeyFrameInterval);
+        ExternalInterface.addCallback("getCameraQuality", this.getCameraQuality);
+        ExternalInterface.addCallback("setCameraQuality", this.setCameraQuality);
       	ExternalInterface.addCallback("start", this.start);
       	ExternalInterface.addCallback("stop", this.stop);
     	} else {
@@ -148,15 +160,6 @@ package {
   	}
 
 
-    public function setBandwidth(bandwidth:int):void {
-      this.bandwidth = bandwidth;
-    }
-
-    public function getBandwidth():int {
-      return this.bandwidth;
-    }
-
-
   	public function setStreamWidth(width:int):void {
   		this.streamWidth = width;
   	}
@@ -175,13 +178,39 @@ package {
   	}
 
 
-  	public function setStreamFPS(fps:int):void {
-  		this.streamFPS = fps;
-  	}
+    public function setBandwidth(bandwidth:int):void {
+      console_log("setting bandwidth");
+      this.bandwidth = bandwidth * 1024 / 8;
+    }
 
-  	public function getStreamFPS():int {
-  		return this.streamFPS;
-  	}
+    public function getBandwidth():int {
+      return this.bandwidth;
+    }
+
+
+    public function setStreamFPS(fps:int):void {
+      this.streamFPS = fps;
+    }
+
+    public function getStreamFPS():int {
+      return this.streamFPS;
+    }
+
+    public function setKeyFrameInterval(frames:int):void {
+      this.keyFrameInterval = frames;
+    }
+
+    public function getKeyFrameInterval():int {
+      return this.keyFrameInterval;
+    }
+
+    public function setCameraQuality(pct:int):void {
+      this.cameraQuality = pct;
+    }
+
+    public function getCameraQuality():int {
+      return this.cameraQuality;
+    }
 
 
   	public function start():void {
@@ -190,11 +219,78 @@ package {
   	}
 
   	public function stop():void {
+      console_log("NetStream.info: " + this.oNetStream.info);
+      console_log("Closing stream ...");
       this.oNetStream.close();
+      console_log("Closing connection ...");
   		this.oConnection.close();
+      console_log("Detaching camera ...");
       this.oVideo.attachCamera(null);
   	}
 
+    public function publish():void {
+      console_log("About to Publish Stream");
+
+      console_log("Publishing " + this.streamWidth + "x" + this.streamHeight + "@" + this.streamFPS);
+      this.oCamera.setMode(this.streamWidth, this.streamHeight, this.streamFPS, true);
+      // bytes per second, % quality
+      this.oCamera.setQuality(this.bandwidth, this.cameraQuality);
+      this.oCamera.setKeyFrameInterval(this.keyFrameInterval);
+
+      this.oMicrophone = Microphone.getMicrophone();
+      this.oMicrophone.codec = SoundCodec.SPEEX;
+      this.oMicrophone.rate = 44;
+      this.oMicrophone.setSilenceLevel(0);
+      this.oMicrophone.encodeQuality = 5;
+      this.oMicrophone.framesPerPacket = 2;
+
+      // attach the camera to the video
+      this.oVideo.width = getVideoWidth();
+      this.oVideo.height = getVideoHeight();
+      this.oVideo.attachCamera(this.oCamera);
+
+      // attach the camera and microphone to the stream
+      this.oNetStream = new NetStream(this.oConnection);
+      this.oNetStream.attachCamera(this.oCamera);
+      this.oNetStream.attachAudio(this.oMicrophone);
+
+      // configure streaming settings -- match to camera settings
+      var h264Settings:H264VideoStreamSettings = new H264VideoStreamSettings();
+      h264Settings.setProfileLevel(H264Profile.MAIN, H264Level.LEVEL_3_1);
+      h264Settings.setQuality(this.bandwidth, this.cameraQuality);
+      h264Settings.setKeyFrameInterval(this.keyFrameInterval);
+      h264Settings.setMode(this.streamWidth, this.streamHeight, this.streamFPS);
+      this.oNetStream.videoStreamSettings = h264Settings;
+
+      console_log("Video dimensions: " + getVideoWidth() + "x" + getVideoHeight());
+      console_log("Resolution: " + this.streamWidth + "x" + this.streamHeight);
+      console_log("Frame rate: " + this.streamFPS + "fps");
+      console_log("Keyframe interval: " + this.keyFrameInterval);
+      console_log("Bandwidth: " + this.bandwidth * 8 / 1024 + "Kbps");
+      console_log("Quality: " + this.cameraQuality + "%");
+
+      // start publishing the stream
+      console_log("Publishing to: " + getStreamEndpoint());
+      this.oNetStream.addEventListener(NetStatusEvent.NET_STATUS, eNetStatus, false, 0, true);
+      //this.oNetStream.publish(getStreamEndpoint());
+      this.oNetStream.publish(this.sStreamName);
+
+      // send metadata
+      var metaData:Object = new Object();
+      metaData.codec = this.oNetStream.videoStreamSettings.codec;
+      metaData.profile = h264Settings.profile;
+      metaData.level = h264Settings.level;
+      metaData.fps = this.streamFPS;
+      metaData.bandwith = this.bandwidth;
+      metaData.width = this.streamWidth;
+      metaData.height = this.streamHeight;
+      metaData.keyFrameInterval = this.keyFrameInterval;
+      this.oNetStream.send("@setDataFrame", "onMetaData", metaData);
+
+      // listen for meta data
+      this.oMetaData.onMetaData = eMetaDataReceived;
+      this.oNetStream.client = this.oMetaData;
+    }
 
   	protected function eMetaDataReceived(oObject:Object):void {
       console_log("MetaData: " + oObject.toString());
@@ -202,65 +298,8 @@ package {
 
     public function onFCPublish(info:Object):void {
     	if (info.code == "NetStream.Publish.Start"){
-    		console_log("About to Publish Stream");
-
-        this.oCamera.setMode(this.streamWidth, this.streamHeight, this.streamFPS, true);
-        // bytes per second, % quality
-        this.oCamera.setQuality(this.bandwidth * 1024 / 8, this.cameraQuality);
-        this.oCamera.setKeyFrameInterval(Math.max(this.streamFPS, 15));
-
-  			this.oMicrophone = Microphone.getMicrophone();
-  			this.oMicrophone.codec = SoundCodec.SPEEX;
-  			this.oMicrophone.rate = 44;
-  			this.oMicrophone.setSilenceLevel(0);
-  			this.oMicrophone.encodeQuality = 5;
-  			this.oMicrophone.framesPerPacket = 2;
-
-  			// attach the camera to the video
-        this.oVideo.width = getVideoWidth();
-        this.oVideo.height = getVideoHeight();
-  			this.oVideo.attachCamera(this.oCamera);
-
-  			// attach the camera and microphone to the stream
-        this.oNetStream = new NetStream(this.oConnection);
-  			this.oNetStream.attachCamera(this.oCamera);
-  			this.oNetStream.attachAudio(this.oMicrophone);
-
-        // configure streaming settings -- match to camera settings
-  			var h264Settings:H264VideoStreamSettings = new H264VideoStreamSettings();
-  			h264Settings.setProfileLevel(H264Profile.MAIN, H264Level.LEVEL_3_1);
-        h264Settings.setQuality(this.oCamera.bandwidth, this.oCamera.quality);
-        h264Settings.setKeyFrameInterval(this.oCamera.keyFrameInterval);
-        h264Settings.setMode(this.oCamera.width, this.oCamera.height, this.oCamera.fps);
-  			this.oNetStream.videoStreamSettings = h264Settings;
-
-        console_log("Video dimensions: " + getVideoWidth() + "x" + getVideoHeight());
-        console_log("Resolution: " + this.oCamera.width + "x" + this.oCamera.height);
-        console_log("Frame rate: " + this.oCamera.fps + "fps");
-        console_log("Keyframe interval: " + this.oCamera.keyFrameInterval);
-        console_log("Bandwidth: " + this.oCamera.bandwidth * 8 / 1024 + "Kbps");
-        console_log("Quality: " + this.oCamera.quality + "%");
-
-  			// start publishing the stream
-        console_log("Publishing to: " + getStreamEndpoint());
-  			this.oNetStream.addEventListener(NetStatusEvent.NET_STATUS, eNetStatus, false, 0, true);
-  			this.oNetStream.publish(getStreamEndpoint());
-
-  			// send metadata
-  			var metaData:Object = new Object();
-  			metaData.codec = this.oNetStream.videoStreamSettings.codec;
-  			metaData.profile = h264Settings.profile;
-  			metaData.level = h264Settings.level;
-  			metaData.fps = this.oCamera.fps;
-  			metaData.bandwith = this.oCamera.bandwidth;
-  			metaData.width = this.oCamera.width;
-        metaData.height = this.oCamera.height;
-  			metaData.keyFrameInterval = this.oCamera.keyFrameInterval;
-  			this.oNetStream.send("@setDataFrame", "onMetaData", metaData);
-
-  			// listen for meta data
-  			this.oMetaData.onMetaData = eMetaDataReceived;
-  			this.oNetStream.client = this.oMetaData;
+        console_log("Ready to publish.")
+        publish();
   		} else {
   			console_log("Error occurred publishing stream: " + info.code);
   		}
@@ -270,7 +309,8 @@ package {
   		switch (oEvent1.info.code) {
   			case "NetConnection.Connect.Success":
           console_log("Connected to the RTMP server.");
-  			  this.oConnection.call("FCPublish", null, this.sStreamName);
+          //this.oConnection.call("FCPublish", null, this.sStreamName);
+          publish();
   				break;
 
   			case "NetConnection.Connect.Closed":
