@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" />
+    <meta http-equiv="Content-type" content="text/html; charset=us-ascii" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <meta name="description" content="" />
+
+    <title>Giving Stage — Tune-in to the Movement</title>
+
+    <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" media="screen" rel="stylesheet" type="text/css" />
+    <link href="//fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,300italic,400italic,700italic|Play:400,700|Oswald:300|Raleway:100,300" media="screen" rel="stylesheet" type="text/css" />
+    <link href="app.css" media="screen" rel="stylesheet" type="text/css" />
+    <link rel="shortcut icon" href="https://res.cloudinary.com/hqpopkkbb/image/upload/v1390947859/application/icon/givingstage-icon-57.png" />
+
+    <style type="text/css">
+    input {
+      width: 100%;
+    }
+
+    button {
+      margin-top: 1em;
+    }
+
+    #recorder > h3 {
+      text-align: center;
+    }
+    </style>
+  </head>
+
+  <body>
+
+    <div class="container">
+
+      <div class="row preview">
+        <div id="name" class="col-md-12">
+          <h2 class="">Start to stream. Stop to stop streaming.</h2>
+          <h2 class=""><br/></h2>
+        </div>
+      </div>
+
+      <div class="row">
+
+        <div class="col-md-4">
+          <form class="form-horizontal">
+            <div class="control-group advanced" _style="display: none;">
+              <label class="control-label" for="serverUrl">RTMP URL:</label>
+              <div class="controls">
+                <input type="text" id="serverUrl" name="serverUrl" value="rtmp://ec2-54-187-221-50.us-west-2.compute.amazonaws.com/big">
+              </div>
+            </div>
+
+            <div class="control-group advanced" _style="display: none;">
+              <label class="control-label" for="eventName">Event Name</label>
+              <div class="controls">
+                <input type="text" id="eventName" name="eventName" value="stage45">
+              </div>
+            </div>
+            <!-- stage45?group26&adbe-live-event=stage45 -->
+
+            <div class="control-group advanced" _style="display: none;">
+              <label class="control-label" for="streamName">Stream Name</label>
+              <div class="controls">
+                <input type="text" id="streamName" name="streamName" value="stage45">
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label class="control-label" for="streamKey">Stream Key</label>
+              <div class="controls">
+                <input type="text" id="streamKey" name="streamKey" value="group26">
+              </div>
+            </div>
+
+            <div class="control-group">
+              <div class="controls">
+                <button class="col-md-5 btn btn-success start-btn">Start</button>
+                <button class="col-md-5 col-md-offset-2 btn btn-danger stop-btn">Stop</button>
+              </div>
+            </div>
+
+          </form>
+        </div>
+
+        <div class="col-md-7 col-md-offset-1">
+          <div id="recorder">
+            <h3>If your browser supports streaming, you'll<br>see the recorded video here.</h3>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
+
+    <script type="text/javascript">
+    $(function() {
+
+      var swfVersionStr = "11.4.0"
+        , xiSwfUrlStr = "playerProductInstall.swf"
+        , flashvars = {}
+        , params = {}
+        , attributes = {}
+
+      params.allowscriptaccess = "sameDomain"
+      params.allowfullscreen = "true"
+      attributes.id = "recorder"
+      attributes.name = "Recorder"
+      attributes.align = "middle"
+      swfobject.embedSWF(
+        "recorder.swf", "recorder", "720", "405",
+        swfVersionStr, xiSwfUrlStr,
+        flashvars, params, attributes)
+
+      $('.start-btn').on('click', function(event) {
+        console.log("starting ...")
+        event.preventDefault()
+
+        var $form = $(this).closest('form')
+          , recorder = $('#recorder')[0]
+          , serverUrl = $form.find('#serverUrl').val()
+          , eventName = $form.find('#eventName').val()
+          , streamName = $form.find('#streamName').val()
+          , streamKey = $form.find('#streamKey').val()
+
+        recorder.setUrl(serverUrl)
+        recorder.setEventName(eventName)
+        recorder.setStreamName(streamName)
+        recorder.setStreamKey(streamKey)
+
+        // By default, the SWF will use the maximum capabilities of the camera
+        // for these, but they are left here just in case we want to override
+        // things (e.g., in the case where flash mis-detects the capabilities
+        // of the camera).
+
+        recorder.setStreamWidth(1280)
+        recorder.setStreamHeight(720)
+        recorder.setStreamFPS(30)
+        recorder.setBandwidth(2500)
+        recorder.setCameraQuality(0)
+        recorder.setKeyFrameInterval(150)
+
+        recorder.start()
+      })
+
+      $('.stop-btn').on('click', function(event) {
+        console.log("stopping ...")
+        event.preventDefault()
+        var recorder = $('#recorder')[0]
+
+        recorder.stop()
+      })
+
+    })
+    </script>
+
+
+  </body>
+</html>

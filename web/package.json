@@ -1,0 +1,21 @@
+{
+  "author": "Giving Stage Team",
+  "name": "givingstage",
+  "domains": [
+    "givingstage.com"
+  ],
+  "version": "0.3.4-2",
+  "description": "ActionScript recorder",
+  "main": "server.coffee",
+  "scripts": {},
+  "repository": "https://github.com/givingstage/givingstage",
+  "dependencies": {
+    "connect": "^2.15.0"
+  },
+  "devDependencies": {},
+  "license": "Copyrighted / All Rights Reserved",
+  "engines": {
+    "node": "0.10.x"
+  },
+  "private": true
+}

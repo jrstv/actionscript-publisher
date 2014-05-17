@@ -1,1 +1,2 @@
 *.swf
+web/node_modules/*
