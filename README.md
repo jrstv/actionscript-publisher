@@ -1,6 +1,6 @@
-# EdgeCast Recorder
+# ActionScript Publisher
 
-This is a Flash app that allows live-streaming to EdgeCast from a web browser.
+This is a Flash app that allows live-streaming via RTMP from a web browser.
 
 This code is based on the work done by [Davide Bertola](http://dadeb.it/) in the [webproducer](https://github.com/davibe/webproducer) project.
 
