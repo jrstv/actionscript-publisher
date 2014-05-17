@@ -4,7 +4,13 @@ This is a Flash app that allows live-streaming via RTMP from a web browser.
 
 It depends on an [EC2 Image](#ec2-image) with the [nginx-rtmp-module][nginx-rtmp-module] installed, along with a custom `ffmpeg` with the "non-free" `x264` and `libfdk_aac` linked-in.
 
-## Notes
+## Codecs
+
+The Flash H.264 encoder is unreliable (at least when ffmpeg tries to decode it). Also, Flash Player doesn't support audio encoding in AAC. As such, the approach we take is to encode video using Sorensen (flv1), audio using Speex, and then use `ffmpeg` on the server to transcode.
+
+If Adobe ever fixes their H.264 encoder, we could just do a passthrough for video with `ffmpeg`. Likewise, if they add an AAC encoder, we could do a passthrough for audio. If _both_ issues are addressed, we wouldn't need the EC2 instance any longer and could stream directly to EdgeCast.
+
+## Debugging
 
 For ease of debugging, it uses the `flash.external.ExternalInterface` class do push all of its logging into JavaScript via console.log.
 
