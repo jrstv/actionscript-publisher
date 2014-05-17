@@ -62,10 +62,11 @@ package {
       // set up the camera and video object
       this.oCamera = Camera.getCamera();
       // attempt to determine the best 16:9 aspect ratio and frame rate that the camera can support
-      this.oCamera.setMode(160000, 90000, 30, true);
+      this.oCamera.setMode(160000, 90000, 60, false);
       this.streamWidth = this.oCamera.width;
       this.streamHeight = this.oCamera.height;
       this.streamFPS = this.oCamera.fps;
+      console_log("camfps:" + this.oCamera.fps);
       this.oVideo = new Video();
       this.addChild(this.oVideo);
 
@@ -118,7 +119,7 @@ package {
       return 240;
     }
 
-    protected function getStreamEndpoint():String {
+    protected function getEdgecastStreamEndpoint():String {
       return this.sStreamName + "?" + this.sStreamKey + "&adbe-live-event=" + this.sEventName;
     }
 
@@ -255,13 +256,20 @@ package {
       this.oNetStream.attachAudio(this.oMicrophone);
 
       // configure streaming settings -- match to camera settings
+      /*
       var h264Settings:H264VideoStreamSettings = new H264VideoStreamSettings();
       h264Settings.setProfileLevel(H264Profile.MAIN, H264Level.LEVEL_3_1);
       h264Settings.setQuality(this.bandwidth, this.cameraQuality);
       h264Settings.setKeyFrameInterval(this.keyFrameInterval);
       h264Settings.setMode(this.streamWidth, this.streamHeight, this.streamFPS);
       this.oNetStream.videoStreamSettings = h264Settings;
+      */
 
+      console_log("Codec: " + this.oNetStream.videoStreamSettings.codec);
+      /*
+      console_log("H264 Profile: " + h264Settings.profile);
+      console_log("H264 Level: " + h264Settings.level);
+      */
       console_log("Video dimensions: " + getVideoWidth() + "x" + getVideoHeight());
       console_log("Resolution: " + this.streamWidth + "x" + this.streamHeight);
       console_log("Frame rate: " + this.streamFPS + "fps");
@@ -270,11 +278,13 @@ package {
       console_log("Quality: " + this.cameraQuality + "%");
 
       // start publishing the stream
-      console_log("Publishing to: " + getStreamEndpoint());
       this.oNetStream.addEventListener(NetStatusEvent.NET_STATUS, eNetStatus, false, 0, true);
-      //this.oNetStream.publish(getStreamEndpoint());
-      this.oNetStream.publish(this.sStreamName);
+      console_log("Publishing to: " + getEdgecastStreamEndpoint());
+      this.oNetStream.publish(getEdgecastStreamEndpoint());
+      //console_log("Publishing to: " + this.sStreamName);
+      //this.oNetStream.publish(this.sStreamName);
 
+      /*
       // send metadata
       var metaData:Object = new Object();
       metaData.codec = this.oNetStream.videoStreamSettings.codec;
@@ -290,6 +300,7 @@ package {
       // listen for meta data
       this.oMetaData.onMetaData = eMetaDataReceived;
       this.oNetStream.client = this.oMetaData;
+      */
     }
 
   	protected function eMetaDataReceived(oObject:Object):void {

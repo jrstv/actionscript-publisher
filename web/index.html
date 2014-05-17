@@ -47,7 +47,7 @@
             <div class="control-group advanced" _style="display: none;">
               <label class="control-label" for="serverUrl">RTMP URL:</label>
               <div class="controls">
-                <input type="text" id="serverUrl" name="serverUrl" value="rtmp://ec2-54-187-221-50.us-west-2.compute.amazonaws.com/big">
+                <input type="text" id="serverUrl" name="serverUrl" value="rtmp://ec2-54-187-221-50.us-west-2.compute.amazonaws.com/live">
               </div>
             </div>
 
@@ -57,7 +57,6 @@
                 <input type="text" id="eventName" name="eventName" value="stage45">
               </div>
             </div>
-            <!-- stage45?group26&adbe-live-event=stage45 -->
 
             <div class="control-group advanced" _style="display: none;">
               <label class="control-label" for="streamName">Stream Name</label>
@@ -131,11 +130,6 @@
         recorder.setEventName(eventName)
         recorder.setStreamName(streamName)
         recorder.setStreamKey(streamKey)
-
-        // By default, the SWF will use the maximum capabilities of the camera
-        // for these, but they are left here just in case we want to override
-        // things (e.g., in the case where flash mis-detects the capabilities
-        // of the camera).
 
         recorder.setStreamWidth(1280)
         recorder.setStreamHeight(720)
