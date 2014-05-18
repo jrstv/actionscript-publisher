@@ -39,7 +39,7 @@ For ease of debugging, it uses the `flash.external.ExternalInterface` class do p
           #record_path /tmp;
           #record_suffix -%d-%b-%y-%T.flv;
 
-          exec /home/ubuntu/bin/ffmpeg -i rtmp://localhost:1935/${app}/${name} -c:v libx264 -b:v 2000k -c:a libfdk_aac -profile:a aac_he -f flv rtmp://stream.lax.cine.io/20C45E/stages/${name}?${args} 2>>/tmp/ffmpeg.log;
+          exec /home/ubuntu/bin/ffmpeg -i rtmp://localhost:1935/${app}/${name} -c:v libx264 -preset ultrafast -crf 23 -maxrate 2000k -c:a libfdk_aac -profile:a aac_he -f flv rtmp://stream.lax.cine.io/20C45E/stages/${name}?${args} 2>>/tmp/ffmpeg.log;
         }
       }
     }

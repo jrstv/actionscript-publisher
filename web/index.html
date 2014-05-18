@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
     <meta name="description" content="" />
 
-    <title>Giving Stage — Tune-in to the Movement</title>
+    <title>ActionScript Publisher</title>
 
     <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" media="screen" rel="stylesheet" type="text/css" />
     <link href="//fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,300italic,400italic,700italic|Play:400,700|Oswald:300|Raleway:100,300" media="screen" rel="stylesheet" type="text/css" />
@@ -35,7 +35,7 @@
 
       <div class="row preview">
         <div id="name" class="col-md-12">
-          <h2 class="">Start to stream. Stop to stop streaming.</h2>
+          <h2 class="">Live-streaming from the Browser</h2>
           <h2 class=""><br/></h2>
         </div>
       </div>
@@ -47,14 +47,7 @@
             <div class="control-group advanced" _style="display: none;">
               <label class="control-label" for="serverUrl">RTMP URL:</label>
               <div class="controls">
-                <input type="text" id="serverUrl" name="serverUrl" value="rtmp://ec2-54-187-246-28.us-west-2.compute.amazonaws.com/live">
-              </div>
-            </div>
-
-            <div class="control-group advanced" _style="display: none;">
-              <label class="control-label" for="eventName">Event Name</label>
-              <div class="controls">
-                <input type="text" id="eventName" name="eventName" value="stage45">
+                <input type="text" id="serverUrl" name="serverUrl" value="rtmp://ec2-54-187-152-72.us-west-2.compute.amazonaws.com/live">
               </div>
             </div>
 
@@ -131,25 +124,20 @@
 
         var $form = $(this).closest('form')
           , recorder = $('#recorder')[0]
-          , serverUrl = $form.find('#serverUrl').val()
-          , eventName = $form.find('#eventName').val()
-          , streamName = $form.find('#streamName').val()
-          , streamKey = $form.find('#streamKey').val()
-          , audioCodec = $form.find('#audioCodec').val()
+          , options = {
+              serverURL: $form.find('#serverUrl').val()
+            , streamName: $form.find('#streamName').val()
+            , streamKey: $form.find('#streamKey').val()
+            , audioCodec: $form.find('#audioCodec').val()
+            , streamWidth: 720
+            , streamHeight: 404
+            , streamFPS: 15
+            , bandwidth: 1500*1024*8
+            , cameraQuality: 90
+            , keyFrameInterval: 150
+            }
 
-        recorder.setUrl(serverUrl)
-        recorder.setEventName(eventName)
-        recorder.setStreamName(streamName)
-        recorder.setStreamKey(streamKey)
-
-        recorder.setAudioCodec(audioCodec)
-        recorder.setStreamWidth(720)
-        recorder.setStreamHeight(404)
-        recorder.setStreamFPS(15)
-        recorder.setBandwidth(1500)
-        recorder.setCameraQuality(90)
-        recorder.setKeyFrameInterval(150)
-
+        recorder.setOptions(options)
         recorder.start()
       })
 
