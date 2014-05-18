@@ -38,11 +38,13 @@ package {
     , audioSampleRate: 44                 // kHz
     , microphoneSilenceLevel: 0
     , microphoneLoopBack: false
+    , jsLogFunction: "console.log"
+    , jsStatusFunction: null
     };
 
 
   	public function recorder() {
-      cLog("Initializing ...");
+      updateStatus("Initializing ...");
 
       this.video = new Video();
       this.addChild(this.video);
@@ -78,7 +80,14 @@ package {
 
     // log to the JavaScript console
     public function cLog(... arguments):void {
-      var applyArgs:Array = ["console.log", "recorder:"].concat(arguments);
+      var applyArgs:Array = [options.jsLogFunction, "recorder:"].concat(arguments);
+      ExternalInterface.call.apply(this, applyArgs);
+    }
+
+    // log to the JavaScript console
+    public function updateStatus(... arguments):void {
+      cLog.apply(this, arguments);
+      var applyArgs:Array = [options.jsStatusFunction].concat(arguments);
       ExternalInterface.call.apply(this, applyArgs);
     }
 
@@ -90,6 +99,7 @@ package {
     }
 
     public function setOptions(options:Object):void {
+      cLog("Received options:", options)
       for(var p:String in options) {
         if (options[p] != null) {
           this.options[p] = options[p];
@@ -98,7 +108,7 @@ package {
     }
 
   	public function start():void {
-  		cLog("Connecting to url: " + this.options.serverURL);
+  		updateStatus("Connecting to url: " + this.options.serverURL);
   		this.connection.connect(this.options.serverURL);
   	}
 
@@ -167,7 +177,7 @@ package {
 
     // publish the stream to the server
     public function publish():void {
-      cLog("About to Publish Stream");
+      updateStatus("About to publish stream ...");
 
       try {
         // set up the camera and video object
@@ -200,23 +210,23 @@ package {
   	private function onNetStatus(event1:NetStatusEvent):void {
   		switch (event1.info.code) {
   			case "NetConnection.Connect.Success":
-          cLog("Connected to the RTMP server.");
+          updateStatus("Connected to the RTMP server.");
           publish();
   				break;
         case "NetConnection.Connect.Failed":
-          cLog("Couldn't connect to the RTMP server.");
+          updateStatus("Couldn't connect to the RTMP server.");
           break;
 
   			case "NetConnection.Connect.Closed":
-  				cLog("Disconnected from the RTMP server.");
+  				updateStatus("Disconnected from the RTMP server.");
   				break;
 
         case "NetStream.Publish.Start":
-          cLog("Publishing started.")
+          updateStatus("Publishing started.")
           break;
 
         case "NetStream.Failed":
-          cLog("Couldn't stream to endpoint.");
+          updateStatus("Couldn't stream to endpoint.");
           stop();
           break;
 

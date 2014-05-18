@@ -26,6 +26,11 @@
     #recorder > h3 {
       text-align: center;
     }
+
+    #status {
+      color: blue;
+      margin-bottom: 1em;
+    }
     </style>
   </head>
 
@@ -36,8 +41,11 @@
       <div class="row preview">
         <div id="name" class="col-md-12">
           <h2 class="">Live-streaming from the Browser</h2>
-          <h2 class=""><br/></h2>
         </div>
+      </div>
+
+      <div class="row">
+        <div id="status" class="col-md-12"></div>
       </div>
 
       <div class="row">
@@ -165,7 +173,20 @@
       swfobject.embedSWF(
         "recorder.swf", "recorder", "720", "405",
         swfVersionStr, xiSwfUrlStr,
-        flashvars, params, attributes)
+        flashvars, params, attributes,
+        function(embedEvent) {
+          if (embedEvent.success) {
+            // need to wait a bit until initialization finishes
+            setTimeout(function() {
+              embedEvent.ref.setOptions({
+                jsLogFunction: "console.log",
+                jsStatusFunction: "updateStatus" }
+              )
+            }, 1000)
+            updateStatus("Configure your stream, then press start.")
+          }
+        }
+      )
 
       $('.start-btn').on('click', function(event) {
         event.preventDefault()
@@ -197,6 +218,10 @@
       })
 
     })
+    function updateStatus(message) {
+      var $statusDiv = $('#status')
+      $statusDiv.text(message)
+    }
     </script>
 
 
