@@ -76,6 +76,55 @@
             </div>
 
             <div class="control-group">
+              <label class="control-label" for="resolution">Resolution</label>
+              <div class="controls">
+                <div class="row">
+                  <div class="col-md-4">
+                    <input type="text" id="streamWidth" name="streamWidth" value="720">
+                  </div>
+                  <div class="col-md-2">x</div>
+                  <div class="col-md-4">
+                    <input type="text" id="streamHeight" name="streamHeight" value="404">
+                  </div>
+                  <div class="col-md-2">pixels</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label class="control-label" for="videoSettings">Video Settings</label>
+              <div class="controls">
+                <div class="row">
+                  <div class="col-md-4">
+                    <input type="text" id="streamFPS" name="streamFPS" value="15">
+                  </div>
+                  <div class="col-md-8">fps</div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-4">
+                    <input type="text" id="keyFrameInterval" name="keyFrameInterval" value="10">
+                  </div>
+                  <div class="col-md-8">seconds (keyframe interval)</div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-4">
+                    <input type="text" id="bandwidth" name="bandwidth" value="1500">
+                  </div>
+                  <div class="col-md-8">Kbps</div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-4">
+                    <input type="text" id="videoQuality" name="videoQuality" value="75">
+                  </div>
+                  <div class="col-md-8">% (quality)</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="control-group">
               <div class="controls">
                 <button class="col-md-5 btn btn-success start-btn">Start</button>
                 <button class="col-md-5 col-md-offset-2 btn btn-danger stop-btn">Stop</button>
@@ -119,22 +168,22 @@
         flashvars, params, attributes)
 
       $('.start-btn').on('click', function(event) {
-        console.log("starting ...")
         event.preventDefault()
-
         var $form = $(this).closest('form')
           , recorder = $('#recorder')[0]
+          , fps = parseInt($form.find('#streamFPS').val())
+          , intervalSecs = parseInt($form.find('#keyFrameInterval').val())
           , options = {
               serverURL: $form.find('#serverUrl').val()
             , streamName: $form.find('#streamName').val()
             , streamKey: $form.find('#streamKey').val()
             , audioCodec: $form.find('#audioCodec').val()
-            , streamWidth: 720
-            , streamHeight: 404
-            , streamFPS: 15
-            , bandwidth: 1500*1024*8
-            , cameraQuality: 90
-            , keyFrameInterval: 150
+            , streamWidth: parseInt($form.find('#streamWidth').val())
+            , streamHeight: parseInt($form.find('#streamHeight').val())
+            , streamFPS: fps
+            , keyFrameInterval: fps * intervalSecs
+            , bandwidth: parseInt($form.find('#bandwidth').val()) * 1024 * 8
+            , videoQuality: parseInt($form.find('#videoQuality').val())
             }
 
         recorder.setOptions(options)
@@ -142,10 +191,8 @@
       })
 
       $('.stop-btn').on('click', function(event) {
-        console.log("stopping ...")
         event.preventDefault()
         var recorder = $('#recorder')[0]
-
         recorder.stop()
       })
 

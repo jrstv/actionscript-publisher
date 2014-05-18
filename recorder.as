@@ -29,8 +29,8 @@ package {
     , streamHeight: 720
     , streamFPS: 30
     , keyFrameInterval: 120
-    , cameraQuality: 75                   // % percentage
     , bandwidth: 2048 * 1024 * 8          // bps
+    , videoQuality: 75                    // % percentage
     , videoCodec: "Sorensen"
     , h264Profile: H264Profile.MAIN       // only valid when videoCodec is H264Avc
     , h264Level: H264Level.LEVEL_3_1      // only valid when videoCodec is H264Avc
@@ -103,7 +103,6 @@ package {
   	}
 
   	public function stop():void {
-      cLog("NetStream.info: " + this.netStream.info);
       if (this.netStream) { this.netStream.close(); }
       if (this.connection.connected) { this.connection.close(); }
       this.video.attachCamera(null);
@@ -131,7 +130,7 @@ package {
     private function getCamera():Camera {
       var camera:Camera = Camera.getCamera();
       camera.setMode(this.options.streamWidth, this.options.streamHeight, this.options.streamFPS, true);
-      camera.setQuality(this.options.bandwidth, this.options.cameraQuality);
+      camera.setQuality(this.options.bandwidth, this.options.videoQuality);
       camera.setKeyFrameInterval(this.options.keyFrameInterval);
 
       return camera;
@@ -147,7 +146,7 @@ package {
       } else {
         videoStreamSettings = new VideoStreamSettings();
       }
-      videoStreamSettings.setQuality(this.options.bandwidth, this.options.cameraQuality);
+      videoStreamSettings.setQuality(this.options.bandwidth, this.options.videoQuality);
       videoStreamSettings.setKeyFrameInterval(this.options.keyFrameInterval);
       videoStreamSettings.setMode(this.options.streamWidth, this.options.streamHeight, this.options.streamFPS);
 
@@ -160,7 +159,7 @@ package {
       cLog("Frame rate:", this.options.streamFPS, "fps");
       cLog("Keyframe interval:", this.options.keyFrameInterval);
       cLog("Bandwidth:", this.options.bandwidth, "bps");
-      cLog("Quality:", this.options.cameraQuality, "%");
+      cLog("Quality:", this.options.videoQuality, "%");
 
       return videoStreamSettings;
     }
