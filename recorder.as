@@ -29,6 +29,7 @@ package {
   	protected var streamWidth:int = 1280;
   	protected var streamHeight:int = 720;
     protected var streamFPS:int = 30;
+    protected var sAudioCodec:String = SoundCodec.NELLYMOSER;
     protected var keyFrameInterval:int = 120;
     protected var cameraQuality:int = 90; // % percentage
     protected var bandwidth:int = 2048; // Kbps
@@ -92,8 +93,10 @@ package {
       	ExternalInterface.addCallback("getStreamKey", this.getStreamKey);
       	ExternalInterface.addCallback("setStreamWidth", this.setStreamWidth);
       	ExternalInterface.addCallback("getStreamWidth", this.getStreamWidth);
-      	ExternalInterface.addCallback("setStreamHeight", this.setStreamHeight);
-      	ExternalInterface.addCallback("getStreamHeight", this.getStreamHeight);
+        ExternalInterface.addCallback("setStreamHeight", this.setStreamHeight);
+        ExternalInterface.addCallback("getStreamHeight", this.getStreamHeight);
+      	ExternalInterface.addCallback("setAudioCodec", this.setAudioCodec);
+      	ExternalInterface.addCallback("getAudioCodec", this.getAudioCodec);
         ExternalInterface.addCallback("getBandwidth", this.getBandwidth);
         ExternalInterface.addCallback("setBandwidth", this.setBandwidth);
         ExternalInterface.addCallback("getStreamFPS", this.getStreamFPS);
@@ -198,6 +201,14 @@ package {
       return this.streamFPS;
     }
 
+    public function setAudioCodec(codec:String):void {
+      this.sAudioCodec = codec;
+    }
+
+    public function getAudioCodec():String {
+      return this.sAudioCodec;
+    }
+
     public function setKeyFrameInterval(frames:int):void {
       this.keyFrameInterval = frames;
     }
@@ -240,7 +251,7 @@ package {
       this.oCamera.setKeyFrameInterval(this.keyFrameInterval);
 
       this.oMicrophone = Microphone.getMicrophone();
-      this.oMicrophone.codec = SoundCodec.SPEEX;
+      this.oMicrophone.codec = sAudioCodec;
       this.oMicrophone.rate = 44;
       this.oMicrophone.setSilenceLevel(0);
       this.oMicrophone.encodeQuality = 5;
@@ -267,7 +278,8 @@ package {
       videoStreamSettings.setMode(this.streamWidth, this.streamHeight, this.streamFPS);
       this.oNetStream.videoStreamSettings = videoStreamSettings;
 
-      console_log("Codec: " + this.oNetStream.videoStreamSettings.codec);
+      console_log("Video Codec: " + this.oNetStream.videoStreamSettings.codec);
+      console_log("Audio Codec: " + this.sAudioCodec);
       /*
       console_log("H264 Profile: " + videoStreamSettings.profile);
       console_log("H264 Level: " + videoStreamSettings.level);

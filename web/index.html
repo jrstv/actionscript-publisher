@@ -73,6 +73,16 @@
             </div>
 
             <div class="control-group">
+              <label class="control-label" for="streamKey">Audio Type</label>
+              <div class="controls">
+                <select id="audioCodec" name="audioCodec">
+                   <option value="Speex">Speech</option>
+                   <option value="NellyMoser" selected>Music</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="control-group">
               <div class="controls">
                 <button class="col-md-5 btn btn-success start-btn">Start</button>
                 <button class="col-md-5 col-md-offset-2 btn btn-danger stop-btn">Stop</button>
@@ -125,12 +135,14 @@
           , eventName = $form.find('#eventName').val()
           , streamName = $form.find('#streamName').val()
           , streamKey = $form.find('#streamKey').val()
+          , audioCodec = $form.find('#audioCodec').val()
 
         recorder.setUrl(serverUrl)
         recorder.setEventName(eventName)
         recorder.setStreamName(streamName)
         recorder.setStreamKey(streamKey)
 
+        recorder.setAudioCodec(audioCodec)
         recorder.setStreamWidth(720)
         recorder.setStreamHeight(404)
         recorder.setStreamFPS(15)
