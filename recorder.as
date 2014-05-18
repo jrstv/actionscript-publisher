@@ -14,6 +14,7 @@ package {
 	import flash.text.TextField;
 	import flash.utils.ByteArray;
 	import flash.utils.setTimeout;
+  import flash.media.VideoStreamSettings;
 	import flash.media.H264VideoStreamSettings;
 	import flash.media.H264Level;
 	import flash.media.H264Profile;
@@ -257,18 +258,19 @@ package {
 
       // configure streaming settings -- match to camera settings
       /*
-      var h264Settings:H264VideoStreamSettings = new H264VideoStreamSettings();
-      h264Settings.setProfileLevel(H264Profile.MAIN, H264Level.LEVEL_3_1);
-      h264Settings.setQuality(this.bandwidth, this.cameraQuality);
-      h264Settings.setKeyFrameInterval(this.keyFrameInterval);
-      h264Settings.setMode(this.streamWidth, this.streamHeight, this.streamFPS);
-      this.oNetStream.videoStreamSettings = h264Settings;
+      var videoStreamSettings:H264VideoStreamSettings = new H264VideoStreamSettings();
+      videoStreamSettings.setProfileLevel(H264Profile.MAIN, H264Level.LEVEL_3_1);
       */
+      var videoStreamSettings:VideoStreamSettings = new VideoStreamSettings();
+      videoStreamSettings.setQuality(this.bandwidth, this.cameraQuality);
+      videoStreamSettings.setKeyFrameInterval(this.keyFrameInterval);
+      videoStreamSettings.setMode(this.streamWidth, this.streamHeight, this.streamFPS);
+      this.oNetStream.videoStreamSettings = videoStreamSettings;
 
       console_log("Codec: " + this.oNetStream.videoStreamSettings.codec);
       /*
-      console_log("H264 Profile: " + h264Settings.profile);
-      console_log("H264 Level: " + h264Settings.level);
+      console_log("H264 Profile: " + videoStreamSettings.profile);
+      console_log("H264 Level: " + videoStreamSettings.level);
       */
       console_log("Video dimensions: " + getVideoWidth() + "x" + getVideoHeight());
       console_log("Resolution: " + this.streamWidth + "x" + this.streamHeight);

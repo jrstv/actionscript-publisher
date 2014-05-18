@@ -47,7 +47,7 @@
             <div class="control-group advanced" _style="display: none;">
               <label class="control-label" for="serverUrl">RTMP URL:</label>
               <div class="controls">
-                <input type="text" id="serverUrl" name="serverUrl" value="rtmp://ec2-54-187-221-50.us-west-2.compute.amazonaws.com/live">
+                <input type="text" id="serverUrl" name="serverUrl" value="rtmp://ec2-54-187-246-28.us-west-2.compute.amazonaws.com/live">
               </div>
             </div>
 
@@ -131,11 +131,11 @@
         recorder.setStreamName(streamName)
         recorder.setStreamKey(streamKey)
 
-        recorder.setStreamWidth(1280)
-        recorder.setStreamHeight(720)
-        recorder.setStreamFPS(30)
-        recorder.setBandwidth(2500)
-        recorder.setCameraQuality(0)
+        recorder.setStreamWidth(720)
+        recorder.setStreamHeight(404)
+        recorder.setStreamFPS(15)
+        recorder.setBandwidth(1500)
+        recorder.setCameraQuality(90)
         recorder.setKeyFrameInterval(150)
 
         recorder.start()
