@@ -1,14 +1,13 @@
 {
   "author": "Giving Stage Team",
-  "name": "givingstage",
+  "name": "actionscript-publisher",
   "domains": [
-    "givingstage.com"
   ],
-  "version": "0.3.4-2",
+  "version": "0.0.1",
   "description": "ActionScript recorder",
   "main": "server.coffee",
   "scripts": {},
-  "repository": "https://github.com/givingstage/givingstage",
+  "repository": "https://github.com/givingstage/actionscript-publisher",
   "dependencies": {
     "connect": "^2.15.0"
   },
