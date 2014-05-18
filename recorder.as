@@ -202,7 +202,11 @@ package {
     }
 
     public function setAudioCodec(codec:String):void {
-      this.sAudioCodec = codec;
+      if (codec == SoundCodec.SPEEX || codec == SoundCodec.NELLYMOSER) {
+        this.sAudioCodec = codec;
+      } else {
+        console_log(codec + " is not a valid audio codec. Using " + SoundCodec.NELLYMOSER + " instead.");
+      }
     }
 
     public function getAudioCodec():String {
