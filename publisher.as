@@ -17,7 +17,7 @@ package {
   import mx.utils.ObjectUtil;
 
 
-  public class recorder extends Sprite {
+  public class publisher extends Sprite {
     protected var video:Video;
     protected var connection:NetConnection;
     protected var netStream:NetStream;
@@ -39,12 +39,12 @@ package {
     , microphoneSilenceLevel: 0
     , microphoneLoopBack: false
     , jsLogFunction: "console.log"
-    , jsStatusFunction: null
+    , jsEmitFunction: null
     };
 
 
-  	public function recorder() {
-      updateStatus("Initializing ...");
+  	public function publisher() {
+      emit("status", "Initializing ...");
 
       this.video = new Video();
       this.addChild(this.video);
@@ -53,13 +53,13 @@ package {
       this.connection.objectEncoding = ObjectEncoding.AMF0;
 
       if (ExternalInterface.available) {
-      	ExternalInterface.addCallback("trace", this.cLog);
+      	ExternalInterface.addCallback("trace", this.log);
         ExternalInterface.addCallback("getOptions", this.getOptions);
         ExternalInterface.addCallback("setOptions", this.setOptions);
       	ExternalInterface.addCallback("start", this.start);
       	ExternalInterface.addCallback("stop", this.stop);
     	} else {
-    		cLog("External interface not available.");
+    		log("External interface not available.");
     	}
   	}
 
@@ -79,15 +79,16 @@ package {
 
 
     // log to the JavaScript console
-    public function cLog(... arguments):void {
-      var applyArgs:Array = [options.jsLogFunction, "recorder:"].concat(arguments);
+    public function log(... arguments):void {
+      var applyArgs:Array = [options.jsLogFunction, "publisher:"].concat(arguments);
       ExternalInterface.call.apply(this, applyArgs);
     }
 
     // log to the JavaScript console
-    public function updateStatus(... arguments):void {
-      cLog.apply(this, arguments);
-      var applyArgs:Array = [options.jsStatusFunction].concat(arguments);
+    public function emit(... arguments):void {
+      log(options.jsEmitFunction)
+      log("calling emit")
+      var applyArgs:Array = [options.jsEmitFunction].concat(arguments);
       ExternalInterface.call.apply(this, applyArgs);
     }
 
@@ -99,7 +100,7 @@ package {
     }
 
     public function setOptions(options:Object):void {
-      cLog("Received options:", options)
+      log("Received options:", options)
       for(var p:String in options) {
         if (options[p] != null) {
           this.options[p] = options[p];
@@ -108,7 +109,7 @@ package {
     }
 
   	public function start():void {
-  		updateStatus("Connecting to url: " + this.options.serverURL);
+  		emit("status", "Connecting to url: " + this.options.serverURL);
   		this.connection.connect(this.options.serverURL);
   	}
 
@@ -129,10 +130,10 @@ package {
       microphone.setSilenceLevel(this.options.microphoneSilenceLevel);
       microphone.setLoopBack(this.options.microphoneLoopBack)
 
-      cLog("Audio Codec:", this.options.audioCodec);
-      cLog("Audio Sample Rate:", this.options.audioSampleRate);
-      cLog("Microphone Silence Level:", this.options.microphoneSilenceLevel);
-      cLog("Microphone Loopback:", this.options.microphoneLoopback);
+      log("Audio Codec:", this.options.audioCodec);
+      log("Audio Sample Rate:", this.options.audioSampleRate);
+      log("Microphone Silence Level:", this.options.microphoneSilenceLevel);
+      log("Microphone Loopback:", this.options.microphoneLoopback);
 
       return microphone;
     }
@@ -160,16 +161,16 @@ package {
       videoStreamSettings.setKeyFrameInterval(this.options.keyFrameInterval);
       videoStreamSettings.setMode(this.options.streamWidth, this.options.streamHeight, this.options.streamFPS);
 
-      cLog("Video Codec:", this.netStream.videoStreamSettings.codec);
+      log("Video Codec:", this.netStream.videoStreamSettings.codec);
       if (this.netStream.videoStreamSettings.codec == "H264Avc") {
-        cLog("H264 Profile:", this.options.h264Profile);
-        cLog("H264 Level:", this.options.h264Level);
+        log("H264 Profile:", this.options.h264Profile);
+        log("H264 Level:", this.options.h264Level);
       }
-      cLog("Resolution:", this.options.streamWidth, "x", this.options.streamHeight);
-      cLog("Frame rate:", this.options.streamFPS, "fps");
-      cLog("Keyframe interval:", this.options.keyFrameInterval);
-      cLog("Bandwidth:", this.options.bandwidth, "bps");
-      cLog("Quality:", this.options.videoQuality, "%");
+      log("Resolution:", this.options.streamWidth, "x", this.options.streamHeight);
+      log("Frame rate:", this.options.streamFPS, "fps");
+      log("Keyframe interval:", this.options.keyFrameInterval);
+      log("Bandwidth:", this.options.bandwidth, "bps");
+      log("Quality:", this.options.videoQuality, "%");
 
       return videoStreamSettings;
     }
@@ -177,7 +178,7 @@ package {
 
     // publish the stream to the server
     public function publish():void {
-      updateStatus("About to publish stream ...");
+      emit("status", "About to publish stream ...");
 
       try {
         // set up the camera and video object
@@ -188,21 +189,22 @@ package {
         this.video.width = getVideoWidth();
         this.video.height = getVideoHeight();
         this.video.attachCamera(camera);
-        cLog("Video dimensions:", getVideoWidth(), "x", getVideoHeight());
+        log("Video dimensions:", getVideoWidth(), "x", getVideoHeight());
 
         // attach the camera and microphone to the stream
         this.netStream = new NetStream(this.connection);
         this.netStream.attachCamera(camera);
         this.netStream.attachAudio(microphone);
         this.netStream.videoStreamSettings = getVideoStreamSettings();
-        cLog("Video Codec:", this.netStream.videoStreamSettings.codec);
+        log("Video Codec:", this.netStream.videoStreamSettings.codec);
 
         // start publishing the stream
         this.netStream.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus, false, 0, true);
-        cLog("Publishing to:", getEdgecastStreamEndpoint());
+        log("Publishing to:", getEdgecastStreamEndpoint());
         this.netStream.publish(getEdgecastStreamEndpoint());
       } catch (err:Error) {
-        cLog("ERROR:", err);
+        log("ERROR:", err);
+        emit("error", err);
       }
     }
 
@@ -210,28 +212,28 @@ package {
   	private function onNetStatus(event1:NetStatusEvent):void {
   		switch (event1.info.code) {
   			case "NetConnection.Connect.Success":
-          updateStatus("Connected to the RTMP server.");
+          emit("connect", "Connected to the RTMP server.");
           publish();
   				break;
         case "NetConnection.Connect.Failed":
-          updateStatus("Couldn't connect to the RTMP server.");
+          emit("error", "Couldn't connect to the RTMP server.");
           break;
 
   			case "NetConnection.Connect.Closed":
-  				updateStatus("Disconnected from the RTMP server.");
+  				emit("disconnect", "Disconnected from the RTMP server.");
   				break;
 
         case "NetStream.Publish.Start":
-          updateStatus("Publishing started.")
+          emit("publish", "Publishing started.")
           break;
 
         case "NetStream.Failed":
-          updateStatus("Couldn't stream to endpoint.");
+          emit("error", "Couldn't stream to endpoint.");
           stop();
           break;
 
 				default:
-          cLog("NetStatusEvent: " + event1.info.code);
+          log("NetStatusEvent: " + event1.info.code);
 					break;
 			}
 		}

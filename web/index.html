@@ -23,7 +23,7 @@
       margin-top: 1em;
     }
 
-    #recorder > h3 {
+    #publisher > h3 {
       text-align: center;
     }
 
@@ -143,7 +143,7 @@
         </div>
 
         <div class="col-md-7 col-md-offset-1">
-          <div id="recorder">
+          <div id="publisher">
             <h3>If your browser supports streaming, you'll<br>see the recorded video here.</h3>
           </div>
         </div>
@@ -167,11 +167,11 @@
 
       params.allowscriptaccess = "sameDomain"
       params.allowfullscreen = "true"
-      attributes.id = "recorder"
-      attributes.name = "Recorder"
+      attributes.id = "publisher"
+      attributes.name = "Publisher"
       attributes.align = "middle"
       swfobject.embedSWF(
-        "recorder.swf", "recorder", "720", "405",
+        "publisher.swf", "publisher", "720", "405",
         swfVersionStr, xiSwfUrlStr,
         flashvars, params, attributes,
         function(embedEvent) {
@@ -180,9 +180,9 @@
             setTimeout(function() {
               embedEvent.ref.setOptions({
                 jsLogFunction: "console.log",
-                jsStatusFunction: "updateStatus" }
+                jsEmitFunction: "handleEmit" }
               )
-            }, 1000)
+            }, 2000)
             updateStatus("Configure your stream, then press start.")
           }
         }
@@ -191,7 +191,7 @@
       $('.start-btn').on('click', function(event) {
         event.preventDefault()
         var $form = $(this).closest('form')
-          , recorder = $('#recorder')[0]
+          , publisher = $('#publisher')[0]
           , fps = parseInt($form.find('#streamFPS').val())
           , intervalSecs = parseInt($form.find('#keyFrameInterval').val())
           , options = {
@@ -207,17 +207,30 @@
             , videoQuality: parseInt($form.find('#videoQuality').val())
             }
 
-        recorder.setOptions(options)
-        recorder.start()
+        publisher.setOptions(options)
+        publisher.start()
       })
 
       $('.stop-btn').on('click', function(event) {
         event.preventDefault()
-        var recorder = $('#recorder')[0]
-        recorder.stop()
+        var publisher = $('#publisher')[0]
+        publisher.stop()
       })
 
     })
+    function handleEmit(event) {
+      switch(event) {
+        case "connect":
+        case "disconnect":
+        case "publish":
+        case "status":
+        case "error":
+          updateStatus(Array.prototype.slice.call(arguments, 1))
+          break
+        default:
+          console.log(Array.prototype.slice.call(arguments, 1))
+      }
+    }
     function updateStatus(message) {
       var $statusDiv = $('#status')
       $statusDiv.text(message)
