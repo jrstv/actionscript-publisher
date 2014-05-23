@@ -24,7 +24,6 @@ package {
     protected var options:Object = {
       serverURL: null
     , streamName: null
-    , streamKey: null
     , streamWidth: 1280
     , streamHeight: 720
     , streamFPS: 30
@@ -71,10 +70,6 @@ package {
     protected function getVideoHeight():int {
       // lock our height at 240px
       return 240;
-    }
-
-    protected function getEdgecastStreamEndpoint():String {
-      return this.options.streamName + "?" + this.options.streamKey + "&adbe-live-event=" + this.options.streamName;
     }
 
 
@@ -200,8 +195,8 @@ package {
 
         // start publishing the stream
         this.netStream.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus, false, 0, true);
-        log("Publishing to:", getEdgecastStreamEndpoint());
-        this.netStream.publish(getEdgecastStreamEndpoint());
+        log("Publishing to:", this.options.streamName);
+        this.netStream.publish(this.options.streamName);
       } catch (err:Error) {
         log("ERROR:", err);
         emit("error", err);
