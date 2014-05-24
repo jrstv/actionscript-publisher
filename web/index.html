@@ -58,14 +58,14 @@
             <div class="control-group advanced" _style="display: none;">
               <label class="control-label" for="serverUrl">RTMP URL:</label>
               <div class="controls">
-                <input type="text" id="serverUrl" name="serverUrl" value="rtmp://publish.west.cine.io/live/stages">
+                <input type="text" id="serverUrl" name="serverUrl" value="rtmp://publish.west.cine.io/live">
               </div>
             </div>
 
             <div class="control-group advanced" _style="display: none;">
               <label class="control-label" for="streamName">Stream Name</label>
               <div class="controls">
-                <input type="text" id="streamName" name="streamName" value="stage45?group26&adbe-live-event=stage45">
+                <input type="text" id="streamName" name="streamName" value="cine1?bass35&adbe-live-event=cine1">
               </div>
             </div>
 
@@ -167,7 +167,7 @@
       attributes.name = "Publisher"
       attributes.align = "middle"
       swfobject.embedSWF(
-        "publisher.swf", "publisher", "720", "405",
+        "publisher.swf", "publisher", "640", "400",
         swfVersionStr, xiSwfUrlStr,
         flashvars, params, attributes,
         function(embedEvent) {

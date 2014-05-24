@@ -1,19 +1,21 @@
 package {
-	import flash.display.Sprite;
-	import flash.events.Event;
-	import flash.events.NetStatusEvent;
-	import flash.external.ExternalInterface;
-	import flash.media.Camera;
-	import flash.media.Microphone;
-	import flash.media.Video;
-	import flash.net.NetConnection;
-	import flash.net.NetStream;
-	import flash.net.ObjectEncoding;
+  import flash.display.Sprite;
+  import flash.display.StageAlign;
+  import flash.display.StageScaleMode;
+  import flash.events.Event;
+  import flash.events.NetStatusEvent;
+  import flash.external.ExternalInterface;
+  import flash.media.Camera;
+  import flash.media.Microphone;
+  import flash.media.Video;
+  import flash.net.NetConnection;
+  import flash.net.NetStream;
+  import flash.net.ObjectEncoding;
   import flash.media.VideoStreamSettings;
-	import flash.media.H264VideoStreamSettings;
-	import flash.media.H264Level;
-	import flash.media.H264Profile;
-	import flash.media.SoundCodec;
+  import flash.media.H264VideoStreamSettings;
+  import flash.media.H264Level;
+  import flash.media.H264Profile;
+  import flash.media.SoundCodec;
   import mx.utils.ObjectUtil;
 
 
@@ -42,34 +44,25 @@ package {
     };
 
 
-  	public function publisher() {
-      emit("status", "Initializing ...");
+    public function publisher() {
+      log("Initializing ...");
 
-      this.video = new Video();
-      this.addChild(this.video);
+      stage.align = StageAlign.TOP_LEFT;
+      stage.scaleMode = StageScaleMode.NO_SCALE;
+
       this.connection = new NetConnection();
       this.connection.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus, false, 0, true);
       this.connection.objectEncoding = ObjectEncoding.AMF0;
 
       if (ExternalInterface.available) {
-      	ExternalInterface.addCallback("trace", this.log);
+        ExternalInterface.addCallback("trace", this.log);
         ExternalInterface.addCallback("getOptions", this.getOptions);
         ExternalInterface.addCallback("setOptions", this.setOptions);
-      	ExternalInterface.addCallback("start", this.start);
-      	ExternalInterface.addCallback("stop", this.stop);
-    	} else {
-    		log("External interface not available.");
-    	}
-  	}
-
-    protected function getVideoWidth():int {
-      // match our video width to our height, but with the right aspect ratio
-      return Math.round(this.options.streamWidth / this.options.streamHeight * getVideoHeight());
-    }
-
-    protected function getVideoHeight():int {
-      // lock our height at 240px
-      return 240;
+        ExternalInterface.addCallback("start", this.start);
+        ExternalInterface.addCallback("stop", this.stop);
+      } else {
+        log("External interface not available.");
+      }
     }
 
 
@@ -81,14 +74,12 @@ package {
 
     // log to the JavaScript console
     public function emit(... arguments):void {
-      log(options.jsEmitFunction)
-      log("calling emit")
       var applyArgs:Array = [options.jsEmitFunction].concat(arguments);
       ExternalInterface.call.apply(this, applyArgs);
     }
 
 
-  	// External APIs -- invoked from JavaScript
+    // External APIs -- invoked from JavaScript
 
     public function getOptions():Object {
       return this.options;
@@ -103,17 +94,17 @@ package {
       }
     }
 
-  	public function start():void {
-  		emit("status", "Connecting to url: " + this.options.serverURL);
-  		this.connection.connect(this.options.serverURL);
-  	}
+    public function start():void {
+      emit("status", "Connecting to url: " + this.options.serverURL);
+      this.connection.connect(this.options.serverURL);
+    }
 
-  	public function stop():void {
+    public function stop():void {
       if (this.netStream) { this.netStream.close(); }
       if (this.connection.connected) { this.connection.close(); }
-      this.video.attachCamera(null);
       this.video.clear();
-  	}
+      this.video.attachCamera(null);
+    }
 
 
     // set up the microphone and camera
@@ -171,20 +162,43 @@ package {
     }
 
 
+    private function getVideoDimensions():Object {
+      log("Stage dimensions:", stage.stageWidth, "x", stage.stageHeight);
+      var width:int, height:int;
+      var stageAR:Number = stage.stageWidth / stage.stageHeight;
+      var streamAR:Number = this.options.streamWidth / this.options.streamHeight;
+      if (streamAR >= stageAR) { // too wide
+        width = stage.stageWidth;
+        height = Math.round(width / streamAR);
+      } else if (streamAR < stageAR) { // too tall
+        height = stage.stageHeight;
+        width = Math.round(height * streamAR);
+      }
+
+      return {
+        width: width
+      , height: height
+      };
+    }
+
+
     // publish the stream to the server
     public function publish():void {
       emit("status", "About to publish stream ...");
 
       try {
+        var videoDimensions:Object = getVideoDimensions();
+        log("Video dimensions:", videoDimensions.width, "x", videoDimensions.height);
+        this.video = new Video(videoDimensions.width, videoDimensions.height);
+        if (this.numChildren > 0) { this.removeChildAt(0); }
+        this.addChild(this.video);
+
         // set up the camera and video object
         var microphone:Microphone = getMicrophone();
         var camera:Camera = getCamera();
 
         // attach the camera to the video
-        this.video.width = getVideoWidth();
-        this.video.height = getVideoHeight();
         this.video.attachCamera(camera);
-        log("Video dimensions:", getVideoWidth(), "x", getVideoHeight());
 
         // attach the camera and microphone to the stream
         this.netStream = new NetStream(this.connection);
@@ -204,19 +218,19 @@ package {
     }
 
     // respond to network status events
-  	private function onNetStatus(event1:NetStatusEvent):void {
-  		switch (event1.info.code) {
-  			case "NetConnection.Connect.Success":
+    private function onNetStatus(event1:NetStatusEvent):void {
+      switch (event1.info.code) {
+        case "NetConnection.Connect.Success":
           emit("connect", "Connected to the RTMP server.");
           publish();
-  				break;
+          break;
         case "NetConnection.Connect.Failed":
           emit("error", "Couldn't connect to the RTMP server.");
           break;
 
-  			case "NetConnection.Connect.Closed":
-  				emit("disconnect", "Disconnected from the RTMP server.");
-  				break;
+        case "NetConnection.Connect.Closed":
+          emit("disconnect", "Disconnected from the RTMP server.");
+          break;
 
         case "NetStream.Publish.Start":
           emit("publish", "Publishing started.")
@@ -227,10 +241,10 @@ package {
           stop();
           break;
 
-				default:
+        default:
           log("NetStatusEvent: " + event1.info.code);
-					break;
-			}
-		}
+          break;
+      }
+    }
   }
 }
