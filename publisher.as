@@ -17,7 +17,9 @@ package {
   import flash.media.H264Profile;
   import flash.media.SoundCodec;
   import mx.utils.ObjectUtil;
+  import flash.system.Security;
 
+  Security.allowDomain('*');
 
   public class publisher extends Sprite {
     protected var video:Video;
