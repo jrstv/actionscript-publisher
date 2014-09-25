@@ -290,7 +290,13 @@ package {
           break;
 
         case "NetStream.Failed":
-          emit("error", "Couldn't stream to endpoint.");
+          emit("error", "Couldn't stream to endpoint (fail).");
+          stop();
+          break;
+
+        case "NetStream.Publish.Denied":
+          log("error", "Couldn't stream to endpoint (deny).");
+          emit("error", "Couldn't stream to endpoint (deny).");
           stop();
           break;
 
