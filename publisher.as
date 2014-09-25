@@ -17,6 +17,10 @@ package {
   import flash.media.H264Profile;
   import flash.media.SoundCodec;
   import mx.utils.ObjectUtil;
+  import flash.utils.getTimer;
+  import flash.utils.setInterval;
+  import flash.utils.setTimeout;
+  import flash.utils.clearInterval;
   import flash.system.Security;
 
   Security.allowDomain('*');
@@ -43,8 +47,16 @@ package {
     , microphoneLoopBack: false
     , jsLogFunction: "console.log"
     , jsEmitFunction: null
+    , embedTimecode: true
     };
 
+    /**
+     * the timestamp of when the recording started.
+     */
+    protected const TIMECODE_INTERVAL_MS:int = 100;
+    protected var _timecodeIntervalHandle:uint;
+    protected var _recordStartTime:uint;
+    protected var _isRecording:Boolean = false;
 
     public function publisher() {
       log("Initializing ...");
@@ -67,6 +79,36 @@ package {
       }
     }
 
+    private function embedTimecode():void {
+      var timeCode:uint = getTimer() - _recordStartTime;
+      var now:Date = new Date();
+      var msTimeStamp:Number = now.getTime();
+      log('embedTimecode: offset - ' + timeCode.toString() + " time - "+ msTimeStamp);
+      sendCuePointData({ dataType: 'timecode', offset: timeCode, timestamp: msTimeStamp });
+    }
+
+
+    // https://github.com/KAPx/krecord/compare/KAPx:kapx...kapx-rtmp-timecode-events
+    /**
+     * Send an 'onTextData' message on the NetStream.
+     */
+    public function sendCuePointData(cuePointData:Object):Boolean {
+      if (_isRecording) {
+        /**
+        if (!('text' in cuePointData)) {
+          cuePointData.text = '';
+        }
+        if (!('language' in cuePointData)) {
+          cuePointData.language = 'eng';
+        }
+        */
+        log("sending cuePointData - " + ObjectUtil.toString(cuePointData))
+        this.netStream.send('onTextData', cuePointData);
+        return true;
+      }
+
+      return false;
+    }
 
     // log to the JavaScript console
     public function log(... arguments):void {
@@ -99,13 +141,16 @@ package {
     public function start():void {
       emit("status", "Connecting to url: " + this.options.serverURL);
       this.connection.connect(this.options.serverURL);
+      this._isRecording = true;
     }
 
     public function stop():void {
       if (this.netStream) { this.netStream.close(); }
       if (this.connection.connected) { this.connection.close(); }
+      clearInterval(this._timecodeIntervalHandle);
       this.video.clear();
       this.video.attachCamera(null);
+      this._isRecording = false;
     }
 
 
@@ -189,6 +234,7 @@ package {
       emit("status", "About to publish stream ...");
 
       try {
+        this._recordStartTime = getTimer()
         var videoDimensions:Object = getVideoDimensions();
         log("Video dimensions:", videoDimensions.width, "x", videoDimensions.height);
         this.video = new Video(videoDimensions.width, videoDimensions.height);
@@ -213,6 +259,11 @@ package {
         this.netStream.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus, false, 0, true);
         log("Publishing to:", this.options.streamName);
         this.netStream.publish(this.options.streamName);
+
+        if (this.options.embedTimecode) {
+          trace('embedding recording timecode');
+          this._timecodeIntervalHandle = setInterval(embedTimecode, TIMECODE_INTERVAL_MS);
+        }
       } catch (err:Error) {
         log("ERROR:", err);
         emit("error", err);
