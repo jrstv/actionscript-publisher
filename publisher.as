@@ -48,12 +48,12 @@ package {
     , jsLogFunction: "console.log"
     , jsEmitFunction: null
     , embedTimecode: true
+    , timecodeFrequency: 100
     };
 
     /**
      * the timestamp of when the recording started.
      */
-    protected const TIMECODE_INTERVAL_MS:int = 100;
     protected var _timecodeIntervalHandle:uint;
     protected var _recordStartTime:uint;
     protected var _isRecording:Boolean = false;
@@ -65,13 +65,15 @@ package {
       stage.scaleMode = StageScaleMode.NO_SCALE;
 
       this.connection = new NetConnection();
-      this.connection.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus, false, 0, true);
       this.connection.objectEncoding = ObjectEncoding.AMF0;
+      this.connection.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus, false, 0, true);
 
       if (ExternalInterface.available) {
         ExternalInterface.addCallback("trace", this.log);
         ExternalInterface.addCallback("getOptions", this.getOptions);
         ExternalInterface.addCallback("setOptions", this.setOptions);
+        ExternalInterface.addCallback("sendData", this.sendTextData);
+        ExternalInterface.addCallback("sendCuePoint", this.sendCuePoint);
         ExternalInterface.addCallback("start", this.start);
         ExternalInterface.addCallback("stop", this.stop);
       } else {
@@ -79,35 +81,34 @@ package {
       }
     }
 
+    // https://github.com/KAPx/krecord/compare/KAPx:kapx...kapx-rtmp-timecode-events
     private function embedTimecode():void {
       var timeCode:uint = getTimer() - _recordStartTime;
       var now:Date = new Date();
       var msTimeStamp:Number = now.getTime();
-      log('embedTimecode: offset - ' + timeCode.toString() + " time - "+ msTimeStamp);
-      sendCuePointData({ dataType: 'timecode', offset: timeCode, timestamp: msTimeStamp });
+      // log('embedTimecode: offset - ' + timeCode.toString() + " time - "+ msTimeStamp);
+      sendTextData({ timecode: timeCode, timestamp: msTimeStamp });
     }
 
 
-    // https://github.com/KAPx/krecord/compare/KAPx:kapx...kapx-rtmp-timecode-events
+    public function sendCuePoint(cuePointData:Object):Boolean {
+      return sendData("onCuePoint", cuePointData);
+    }
+
     /**
      * Send an 'onTextData' message on the NetStream.
      */
-    public function sendCuePointData(cuePointData:Object):Boolean {
-      if (_isRecording) {
-        /**
-        if (!('text' in cuePointData)) {
-          cuePointData.text = '';
-        }
-        if (!('language' in cuePointData)) {
-          cuePointData.language = 'eng';
-        }
-        */
-        log("sending cuePointData - " + ObjectUtil.toString(cuePointData))
-        this.netStream.send('onTextData', cuePointData);
-        return true;
-      }
+    public function sendTextData(data:Object):Boolean{
+        return sendData("onTextData", data);
+    }
 
-      return false;
+    private function sendData(handle:String, data:Object):Boolean{
+      if (!_isRecording) {
+        return false;
+      }
+      // log("sending data - " + ObjectUtil.toString(data));
+      this.netStream.send(handle, data);
+      return true;
     }
 
     // log to the JavaScript console
@@ -145,9 +146,9 @@ package {
     }
 
     public function stop():void {
+      clearInterval(this._timecodeIntervalHandle);
       if (this.netStream) { this.netStream.close(); }
       if (this.connection.connected) { this.connection.close(); }
-      clearInterval(this._timecodeIntervalHandle);
       this.video.clear();
       this.video.attachCamera(null);
       this._isRecording = false;
@@ -234,7 +235,6 @@ package {
       emit("status", "About to publish stream ...");
 
       try {
-        this._recordStartTime = getTimer()
         var videoDimensions:Object = getVideoDimensions();
         log("Video dimensions:", videoDimensions.width, "x", videoDimensions.height);
         this.video = new Video(videoDimensions.width, videoDimensions.height);
@@ -258,11 +258,13 @@ package {
         // start publishing the stream
         this.netStream.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus, false, 0, true);
         log("Publishing to:", this.options.streamName);
+        // set the initial timer
+        this._recordStartTime = getTimer()
         this.netStream.publish(this.options.streamName);
 
         if (this.options.embedTimecode) {
           trace('embedding recording timecode');
-          this._timecodeIntervalHandle = setInterval(embedTimecode, TIMECODE_INTERVAL_MS);
+          this._timecodeIntervalHandle = setInterval(embedTimecode, this.options.timecodeFrequency);
         }
       } catch (err:Error) {
         log("ERROR:", err);

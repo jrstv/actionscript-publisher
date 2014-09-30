@@ -200,6 +200,8 @@
             , keyFrameInterval: fps * intervalSecs
             , bandwidth: parseInt($form.find('#bandwidth').val()) * 1024 * 8
             , videoQuality: parseInt($form.find('#videoQuality').val())
+            , embedTimecode: true
+            , timecodeFrequency: 1000
             }
 
         publisher.setOptions(options)
