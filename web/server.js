@@ -1,2 +1,5 @@
-var connect = require('connect');
-connect().use(connect.static(__dirname)).listen(8080);
+var connect = require('connect')
+  , port = process.env.PORT || 9090;
+
+console.log("Listening on port", port, "...")
+connect().use(connect.static(__dirname)).listen(port)
