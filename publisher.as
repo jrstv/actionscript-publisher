@@ -99,6 +99,12 @@ package {
      * Send an 'onTextData' message on the NetStream.
      */
     public function sendTextData(data:Object):Boolean{
+        if (!('text' in data)) {
+          data.text = '';
+        }
+        if (!('language' in data)) {
+          data.language = 'eng';
+        }
         return sendData("onTextData", data);
     }
 
