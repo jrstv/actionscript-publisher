@@ -3,6 +3,7 @@ package {
   import flash.display.StageAlign;
   import flash.display.StageScaleMode;
   import flash.events.Event;
+  import flash.events.StatusEvent;
   import flash.events.NetStatusEvent;
   import flash.external.ExternalInterface;
   import flash.media.Camera;
@@ -56,7 +57,14 @@ package {
      */
     protected var _timecodeIntervalHandle:uint;
     protected var _recordStartTime:uint;
-    protected var _isRecording:Boolean = false;
+    protected var _isPublishing:Boolean = false;
+    // _cameraStreaming is changed when the user clicks allow, or it is already allowed
+    // we need this because otherwise ffmpeg detects an audio stream
+    // and a data stream
+    // and it then drops the video stream on the floor
+    // so we need to wait for the video stream to start streaming
+    // then we can start sending data
+    protected var _hasMediaAccess:Boolean = false;
 
     public function publisher() {
       log("Initializing ...");
@@ -109,7 +117,10 @@ package {
     }
 
     private function sendData(handle:String, data:Object):Boolean{
-      if (!_isRecording) {
+      if (!_hasMediaAccess) {
+        return false;
+      }
+      if (!_isPublishing) {
         return false;
       }
       // log("sending data - " + ObjectUtil.toString(data));
@@ -148,7 +159,6 @@ package {
     public function start():void {
       emit("status", "Connecting to url: " + this.options.serverURL);
       this.connection.connect(this.options.serverURL);
-      this._isRecording = true;
     }
 
     public function stop():void {
@@ -157,7 +167,7 @@ package {
       if (this.connection.connected) { this.connection.close(); }
       this.video.clear();
       this.video.attachCamera(null);
-      this._isRecording = false;
+      this._isPublishing = false;
     }
 
 
@@ -250,6 +260,8 @@ package {
         // set up the camera and video object
         var microphone:Microphone = getMicrophone();
         var camera:Camera = getCamera();
+        this._hasMediaAccess = !camera.muted;
+        camera.addEventListener(StatusEvent.STATUS, onCameraStatus);
 
         // attach the camera to the video
         this.video.attachCamera(camera);
@@ -263,6 +275,30 @@ package {
 
         // start publishing the stream
         this.netStream.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus, false, 0, true);
+        if (this._hasMediaAccess){
+          startPublishing();
+        }
+      } catch (err:Error) {
+        log("ERROR:", err);
+        emit("error", err);
+      }
+    }
+
+    private function onCameraStatus(event:StatusEvent):void {
+      switch (event.code) {
+        case "Camera.Muted":
+          trace("User clicked Deny.");
+          break;
+        case "Camera.Unmuted":
+          this._hasMediaAccess = true;
+          startPublishing();
+          trace("User clicked Accept.");
+          break;
+        }
+    }
+
+    private function startPublishing():void{
+      try {
         log("Publishing to:", this.options.streamName);
         // set the initial timer
         this._recordStartTime = getTimer()
@@ -294,6 +330,7 @@ package {
           break;
 
         case "NetStream.Publish.Start":
+          this._isPublishing = true;
           emit("publish", "Publishing started.")
           break;
 
