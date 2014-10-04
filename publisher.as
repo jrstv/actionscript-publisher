@@ -30,6 +30,8 @@ package {
     protected var video:Video;
     protected var connection:NetConnection;
     protected var netStream:NetStream;
+    protected var camera:Camera;
+    protected var microphone:Microphone;
     protected var options:Object = {
       serverURL: null
     , streamName: null
@@ -57,6 +59,7 @@ package {
      */
     protected var _timecodeIntervalHandle:uint;
     protected var _recordStartTime:uint;
+    protected var _isPreviewing:Boolean = false;
     protected var _isPublishing:Boolean = false;
     // _cameraStreaming is changed when the user clicks allow, or it is already allowed
     // we need this because otherwise ffmpeg detects an audio stream
@@ -84,6 +87,7 @@ package {
         ExternalInterface.addCallback("sendCuePoint", this.sendCuePoint);
         ExternalInterface.addCallback("start", this.start);
         ExternalInterface.addCallback("stop", this.stop);
+        ExternalInterface.addCallback("preview", this.preview);
       } else {
         log("External interface not available.");
       }
@@ -159,6 +163,29 @@ package {
     public function start():void {
       emit("status", "Connecting to url: " + this.options.serverURL);
       this.connection.connect(this.options.serverURL);
+    }
+
+    public function preview():void {
+      emit("status", "Previewing.");
+      if(this._isPreviewing){
+        return;
+      }
+      var videoDimensions:Object = getVideoDimensions();
+      log("Video dimensions:", videoDimensions.width, "x", videoDimensions.height);
+      this.video = new Video(videoDimensions.width, videoDimensions.height);
+      if (this.numChildren > 0) { this.removeChildAt(0); }
+      this.addChild(this.video);
+
+      // set up the camera and video object
+      this.microphone = getMicrophone();
+      this.camera = getCamera();
+      this._hasMediaAccess = !camera.muted;
+      camera.addEventListener(StatusEvent.STATUS, onCameraStatus);
+
+      // attach the camera to the video
+      this.video.attachCamera(camera);
+      this._isPreviewing = true;
+
     }
 
     public function stop():void {
@@ -251,25 +278,12 @@ package {
       emit("status", "About to publish stream ...");
 
       try {
-        var videoDimensions:Object = getVideoDimensions();
-        log("Video dimensions:", videoDimensions.width, "x", videoDimensions.height);
-        this.video = new Video(videoDimensions.width, videoDimensions.height);
-        if (this.numChildren > 0) { this.removeChildAt(0); }
-        this.addChild(this.video);
-
-        // set up the camera and video object
-        var microphone:Microphone = getMicrophone();
-        var camera:Camera = getCamera();
-        this._hasMediaAccess = !camera.muted;
-        camera.addEventListener(StatusEvent.STATUS, onCameraStatus);
-
-        // attach the camera to the video
-        this.video.attachCamera(camera);
+        preview();
 
         // attach the camera and microphone to the stream
         this.netStream = new NetStream(this.connection);
-        this.netStream.attachCamera(camera);
-        this.netStream.attachAudio(microphone);
+        this.netStream.attachCamera(this.camera);
+        this.netStream.attachAudio(this.microphone);
         this.netStream.videoStreamSettings = getVideoStreamSettings();
         log("Video Codec:", this.netStream.videoStreamSettings.codec);
 

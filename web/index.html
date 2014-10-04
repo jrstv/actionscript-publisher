@@ -131,8 +131,9 @@
 
             <div class="control-group">
               <div class="controls">
-                <button class="col-md-5 btn btn-success start-btn">Start</button>
-                <button class="col-md-5 col-md-offset-2 btn btn-danger stop-btn">Stop</button>
+                <button class="col-md-3 btn btn-success start-btn">Start</button>
+                <button class="col-md-3 col-md-offset-1 btn btn-info preview-btn">Preview</button>
+                <button class="col-md-3 col-md-offset-1 btn btn-danger stop-btn">Stop</button>
               </div>
             </div>
 
@@ -185,13 +186,13 @@
         }
       )
 
-      $('.start-btn').on('click', function(event) {
-        event.preventDefault()
-        var $form = $(this).closest('form')
-          , publisher = $('#publisher')[0]
+      function getOptions(){
+        var
+          $form = $(this).closest('form')
           , fps = parseInt($form.find('#streamFPS').val())
-          , intervalSecs = parseInt($form.find('#keyFrameInterval').val())
-          , options = {
+          , intervalSecs = parseInt($form.find('#keyFrameInterval').val());
+
+        return {
               serverURL: $form.find('#serverUrl').val()
             , streamName: $form.find('#streamName').val()
             , streamKey: $form.find('#streamKey').val()
@@ -204,10 +205,27 @@
             , videoQuality: parseInt($form.find('#videoQuality').val())
             , embedTimecode: true
             , timecodeFrequency: 1000
-            }
+          }
+      }
+
+      $('.start-btn').on('click', function(event) {
+        event.preventDefault()
+        var
+          publisher = $('#publisher')[0]
+          , options = getOptions.call(this)
 
         publisher.setOptions(options)
         publisher.start()
+      })
+
+      $('.preview-btn').on('click', function(event) {
+        event.preventDefault()
+        var
+          publisher = $('#publisher')[0],
+          options = getOptions.call(this)
+
+        publisher.setOptions(options)
+        publisher.preview()
       })
 
       $('.stop-btn').on('click', function(event) {
