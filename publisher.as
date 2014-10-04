@@ -134,12 +134,18 @@ package {
 
     // log to the JavaScript console
     public function log(... arguments):void {
+      if (options.jsLogFunction == null){
+        return;
+      }
       var applyArgs:Array = [options.jsLogFunction, "publisher:"].concat(arguments);
       ExternalInterface.call.apply(this, applyArgs);
     }
 
     // log to the JavaScript console
     public function emit(... arguments):void {
+      if (options.jsEmitFunction == null){
+        return;
+      }
       var applyArgs:Array = [options.jsEmitFunction].concat(arguments);
       ExternalInterface.call.apply(this, applyArgs);
     }
