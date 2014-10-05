@@ -61,6 +61,7 @@ package {
     protected var _recordStartTime:uint;
     protected var _isPreviewing:Boolean = false;
     protected var _isPublishing:Boolean = false;
+    protected var _isConnecting:Boolean = false;
     // _cameraStreaming is changed when the user clicks allow, or it is already allowed
     // we need this because otherwise ffmpeg detects an audio stream
     // and a data stream
@@ -74,10 +75,6 @@ package {
 
       stage.align = StageAlign.TOP_LEFT;
       stage.scaleMode = StageScaleMode.NO_SCALE;
-
-      this.connection = new NetConnection();
-      this.connection.objectEncoding = ObjectEncoding.AMF0;
-      this.connection.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus, false, 0, true);
 
       if (ExternalInterface.available) {
         ExternalInterface.addCallback("trace", this.log);
@@ -166,15 +163,25 @@ package {
       }
     }
 
-    public function start():void {
+    public function start():Boolean {
+      if (this._isConnecting){
+        return false;
+      }
+      this.connection = new NetConnection();
+      this.connection.objectEncoding = ObjectEncoding.AMF0;
+      this.connection.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus, false, 0, true);
+
       emit("status", "Connecting to url: " + this.options.serverURL);
       this.connection.connect(this.options.serverURL);
+
+      this._isConnecting = true;
+      return true;
     }
 
-    public function preview():void {
+    public function preview():Boolean {
       emit("status", "Previewing.");
       if(this._isPreviewing){
-        return;
+        return false;
       }
       var videoDimensions:Object = getVideoDimensions();
       log("Video dimensions:", videoDimensions.width, "x", videoDimensions.height);
@@ -191,18 +198,37 @@ package {
       // attach the camera to the video
       this.video.attachCamera(camera);
       this._isPreviewing = true;
-
+      return true;
     }
 
     public function stop():void {
-      clearInterval(this._timecodeIntervalHandle);
-      if (this.netStream) { this.netStream.close(); }
-      if (this.connection.connected) { this.connection.close(); }
-      this.video.clear();
-      this.video.attachCamera(null);
-      this._isPublishing = false;
+      if (this._timecodeIntervalHandle){
+        clearInterval(this._timecodeIntervalHandle);
+      }
+      log("closing net stream");
+      if (this.netStream) {
+        this.netStream.close();
+        this.netStream = null;
+      }
+      log("closing video");
+      if (this.video){
+        this.video.clear();
+        this.video.attachCamera(null);
+      }
+      log("closing clearing variables");
+      isDisconnected();
+      this._isPreviewing = false;
+
+      log("closing connection");
+      if (this.connection && this.connection.connected) {
+        this.connection.close();
+      }
     }
 
+    private function isDisconnected():void{
+      this._isConnecting = false;
+      this._isPublishing = false;
+    }
 
     // set up the microphone and camera
 
@@ -280,7 +306,7 @@ package {
 
 
     // publish the stream to the server
-    public function publish():void {
+    private function publish():void {
       emit("status", "About to publish stream ...");
 
       try {
@@ -288,13 +314,14 @@ package {
 
         // attach the camera and microphone to the stream
         this.netStream = new NetStream(this.connection);
+        this.netStream.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus, false, 0, true);
+
         this.netStream.attachCamera(this.camera);
         this.netStream.attachAudio(this.microphone);
         this.netStream.videoStreamSettings = getVideoStreamSettings();
         log("Video Codec:", this.netStream.videoStreamSettings.codec);
 
         // start publishing the stream
-        this.netStream.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus, false, 0, true);
         if (this._hasMediaAccess){
           startPublishing();
         }
@@ -338,14 +365,16 @@ package {
     private function onNetStatus(event1:NetStatusEvent):void {
       switch (event1.info.code) {
         case "NetConnection.Connect.Success":
-          emit("connect", "Connected to the RTMP server.");
           publish();
+          emit("connect", "Connected to the RTMP server.");
           break;
         case "NetConnection.Connect.Failed":
+          isDisconnected();
           emit("error", "Couldn't connect to the RTMP server.");
           break;
 
         case "NetConnection.Connect.Closed":
+          isDisconnected();
           emit("disconnect", "Disconnected from the RTMP server.");
           break;
 
@@ -355,14 +384,13 @@ package {
           break;
 
         case "NetStream.Failed":
-          emit("error", "Couldn't stream to endpoint (fail).");
           stop();
+          emit("error", "Couldn't stream to endpoint (fail).");
           break;
 
         case "NetStream.Publish.Denied":
-          log("error", "Couldn't stream to endpoint (deny).");
-          emit("error", "Couldn't stream to endpoint (deny).");
           stop();
+          emit("error", "Couldn't stream to endpoint (deny).");
           break;
 
         default:
