@@ -255,6 +255,9 @@
         default:
           console.log(Array.prototype.slice.call(arguments, 1))
       }
+      // if (event == 'disconnect' || message == "Couldn't connect to the RTMP server."){
+      //   startPublishing();
+      // }
     }
     function updateStatus(message) {
       var $statusDiv = $('#status')
