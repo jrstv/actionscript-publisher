@@ -250,7 +250,7 @@
         case "status":
         case "error":
           console.log("got event", event)
-          updateStatus(event)
+          updateStatus(event.message)
           break
         default:
           console.log(event)
