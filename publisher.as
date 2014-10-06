@@ -82,8 +82,8 @@ package {
         ExternalInterface.addCallback("getOptions", this.getOptions);
         ExternalInterface.addCallback("setOptions", this.setOptions);
         ExternalInterface.addCallback("getMediaInfo", this.getMediaInfo);
-        ExternalInterface.addCallback("changeMicrophone", this.changeMicrophone);
-        ExternalInterface.addCallback("changeCamera", this.changeCamera);
+        ExternalInterface.addCallback("selectMicrophone", this.selectMicrophone);
+        ExternalInterface.addCallback("selectCamera", this.selectCamera);
         ExternalInterface.addCallback("sendData", this.sendTextData);
         ExternalInterface.addCallback("sendCuePoint", this.sendCuePoint);
         ExternalInterface.addCallback("start", this.start);
@@ -109,14 +109,14 @@ package {
     }
 
     public function getMediaInfo():Object{
-      return {cameras: Camera.names.length, microphones: Microphone.names.length};
+      return {cameras: Camera.names, microphones: Microphone.names};
     }
 
-    public function changeMicrophone():void{
+    public function selectMicrophone():void{
       Security.showSettings(SecurityPanel.MICROPHONE);
-
     }
-    public function changeCamera():void{
+
+    public function selectCamera():void{
       Security.showSettings(SecurityPanel.CAMERA);
     }
 
