@@ -242,20 +242,20 @@
       })
 
     })
-    function handleEmit(event, message) {
-      switch(event) {
+    function handleEmit(event) {
+      switch(event.kind) {
         case "connect":
         case "disconnect":
         case "publish":
         case "status":
         case "error":
-          console.log("got event", arguments)
-          updateStatus(Array.prototype.slice.call(arguments, 1))
+          console.log("got event", event)
+          updateStatus(event)
           break
         default:
-          console.log(Array.prototype.slice.call(arguments, 1))
+          console.log(event)
       }
-      // if (event == 'disconnect' || message == "Couldn't connect to the RTMP server."){
+      // if (event.kind == 'disconnect'){
       //   startPublishing();
       // }
     }

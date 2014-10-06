@@ -139,12 +139,11 @@ package {
     }
 
     // log to the JavaScript console
-    public function emit(... arguments):void {
+    public function emit(emitObject:Object):void {
       if (options.jsEmitFunction == null){
         return;
       }
-      var applyArgs:Array = [options.jsEmitFunction].concat(arguments);
-      ExternalInterface.call.apply(this, applyArgs);
+      ExternalInterface.call.apply(this, [options.jsEmitFunction, emitObject]);
     }
 
 
@@ -171,7 +170,7 @@ package {
       this.connection.objectEncoding = ObjectEncoding.AMF0;
       this.connection.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus, false, 0, true);
 
-      emit("status", "Connecting to url: " + this.options.serverURL);
+      emit({kind: "status", code: 100, message: "Connecting to url: " + this.options.serverURL});
       this.connection.connect(this.options.serverURL);
 
       this._isConnecting = true;
@@ -179,7 +178,7 @@ package {
     }
 
     public function preview():Boolean {
-      emit("status", "Previewing.");
+      emit({kind: "status", code: 101, message: "Previewing."});
       if(this._isPreviewing){
         return false;
       }
@@ -307,7 +306,7 @@ package {
 
     // publish the stream to the server
     private function publish():void {
-      emit("status", "About to publish stream ...");
+      emit({kind: "status", code: 102, message: "About to publish stream ..."});
 
       try {
         preview();
@@ -327,7 +326,7 @@ package {
         }
       } catch (err:Error) {
         log("ERROR:", err);
-        emit("error", err);
+        emit({kind: "error", message: err});
       }
     }
 
@@ -357,7 +356,7 @@ package {
         }
       } catch (err:Error) {
         log("ERROR:", err);
-        emit("error", err);
+        emit({kind: "error", message: err});
       }
     }
 
@@ -366,31 +365,31 @@ package {
       switch (event1.info.code) {
         case "NetConnection.Connect.Success":
           publish();
-          emit("connect", "Connected to the RTMP server.");
+          emit({kind: "connect", code: 200, message: "Connected to the RTMP server."});
           break;
         case "NetConnection.Connect.Failed":
           isDisconnected();
-          emit("error", "Couldn't connect to the RTMP server.");
+          emit({kind: "disconnect", code: 501, message: "Couldn't connect to the RTMP server."});
           break;
 
         case "NetConnection.Connect.Closed":
           isDisconnected();
-          emit("disconnect", "Disconnected from the RTMP server.");
+          emit({kind: "disconnect", code: 502, message: "Disconnected from the RTMP server."});
           break;
 
         case "NetStream.Publish.Start":
           this._isPublishing = true;
-          emit("publish", "Publishing started.")
+          emit({kind: "connect", code: 201, message: "Publishing started."})
           break;
 
         case "NetStream.Failed":
           stop();
-          emit("error", "Couldn't stream to endpoint (fail).");
+          emit({kind: "error", code: 503, message: "Couldn't stream to endpoint (fail)."});
           break;
 
         case "NetStream.Publish.Denied":
           stop();
-          emit("error", "Couldn't stream to endpoint (deny).");
+          emit({kind: "error", code: 504, message: "Couldn't stream to endpoint (deny)."});
           break;
 
         default:
