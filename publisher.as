@@ -336,6 +336,8 @@ package {
         this.netStream = new NetStream(this.connection);
         this.netStream.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus, false, 0, true);
 
+        sendMetaData();
+
         this.netStream.attachCamera(this.camera);
         this.netStream.attachAudio(this.microphone);
         this.netStream.videoStreamSettings = getVideoStreamSettings();
@@ -349,6 +351,17 @@ package {
         log("ERROR:", err);
         emit({kind: "error", message: err});
       }
+    }
+
+    private function sendMetaData():void {
+      var metaData:Object = new Object();
+      metaData.title = this.options.streamName;
+      metaData.width = this.options.streamWidth;
+      metaData.height = this.options.streamHeight;
+
+      emit({kind: "status", code: 103, message: "Sending stream metadata."});
+
+      this.netStream.send( "@setDataFrame", "onMetaData", metaData);
     }
 
     private function onCameraStatus(event:StatusEvent):void {
@@ -385,8 +398,8 @@ package {
     private function onNetStatus(event1:NetStatusEvent):void {
       switch (event1.info.code) {
         case "NetConnection.Connect.Success":
-          publish();
           emit({kind: "connect", code: 200, message: "Connected to the RTMP server."});
+          publish();
           break;
         case "NetConnection.Connect.Failed":
           isDisconnected();
