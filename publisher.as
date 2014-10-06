@@ -89,6 +89,7 @@ package {
         ExternalInterface.addCallback("start", this.start);
         ExternalInterface.addCallback("stop", this.stop);
         ExternalInterface.addCallback("preview", this.preview);
+        ExternalInterface.addCallback("getInfo", this.getInfo);
       } else {
         log("External interface not available.");
       }
@@ -118,6 +119,10 @@ package {
 
     public function selectCamera():void{
       Security.showSettings(SecurityPanel.CAMERA);
+    }
+
+    public function getInfo():Object{
+      return {version: "0.1.0"}
     }
 
     /**
