@@ -23,6 +23,7 @@ package {
   import flash.utils.setTimeout;
   import flash.utils.clearInterval;
   import flash.system.Security;
+  import flash.system.SecurityPanel;
 
   Security.allowDomain('*');
 
@@ -80,6 +81,9 @@ package {
         ExternalInterface.addCallback("trace", this.log);
         ExternalInterface.addCallback("getOptions", this.getOptions);
         ExternalInterface.addCallback("setOptions", this.setOptions);
+        ExternalInterface.addCallback("getMediaInfo", this.getMediaInfo);
+        ExternalInterface.addCallback("changeMicrophone", this.changeMicrophone);
+        ExternalInterface.addCallback("changeCamera", this.changeCamera);
         ExternalInterface.addCallback("sendData", this.sendTextData);
         ExternalInterface.addCallback("sendCuePoint", this.sendCuePoint);
         ExternalInterface.addCallback("start", this.start);
@@ -102,6 +106,18 @@ package {
 
     public function sendCuePoint(cuePointData:Object):Boolean {
       return sendData("onCuePoint", cuePointData);
+    }
+
+    public function getMediaInfo():Object{
+      return {cameras: Camera.names.length, microphones: Microphone.names.length};
+    }
+
+    public function changeMicrophone():void{
+      Security.showSettings(SecurityPanel.MICROPHONE);
+
+    }
+    public function changeCamera():void{
+      Security.showSettings(SecurityPanel.CAMERA);
     }
 
     /**
