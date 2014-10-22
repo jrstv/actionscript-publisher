@@ -42,10 +42,10 @@ package {
     , keyFrameInterval: 120
     , bandwidth: 2048 * 1024 * 8          // bps
     , videoQuality: 75                    // % percentage
-    , videoCodec: "Sorensen"
+    , videoCodec: "Sorensen"              // options: Sorensen|H264Avc
     , h264Profile: H264Profile.MAIN       // only valid when videoCodec is H264Avc
     , h264Level: H264Level.LEVEL_3_1      // only valid when videoCodec is H264Avc
-    , audioCodec: SoundCodec.NELLYMOSER
+    , audioCodec: SoundCodec.NELLYMOSER   // options: NellyMoser|Speex
     , audioSampleRate: 44                 // kHz
     , microphoneSilenceLevel: 0
     , microphoneLoopBack: false
@@ -356,10 +356,51 @@ package {
       metaData.title = this.options.streamName;
       metaData.width = this.options.streamWidth;
       metaData.height = this.options.streamHeight;
-
-      emit({kind: "status", code: 103, message: "Sending stream metadata."});
+      metaData.displayWidth = this.options.streamWidth;
+      metaData.displayHeight = this.options.streamHeight;
+      metaData.fps = this.options.streamFPS;
+      metaData.audiocodecid = this.getAudioCodecId();
+      metaData.videocodecid = this.getVideoCodecId();
+      emit({kind: "status", code: 103, message: "Sending stream metadata.", metaData: metaData});
 
       this.netStream.send( "@setDataFrame", "onMetaData", metaData);
+    }
+
+    // http://help.adobe.com/en_US/flashmediaserver/devguide/WS5b3ccc516d4fbf351e63e3d11a0773d56e-7ff6Dev.html
+    private function getAudioCodecId():Number{
+      log("audioCodec", this.options.audioCodec);
+      switch (this.options.audioCodec) {
+        case "Uncompressed":
+          return 0;
+        case "ADPCM":
+          return 1;
+        case "MP3":
+          return 2;
+        case "Nellymoser 8 kHz Mono":
+          return 5;
+        case "Nellymoser":
+          return 6;
+        // we pass in NellyMoser
+        case "NellyMoser":
+          return 6;
+        case "HE-AAC":
+          return 10;
+        case "Speex":
+          return 11;
+      }
+      return -1;
+    }
+    // http://help.adobe.com/en_US/flashmediaserver/devguide/WS5b3ccc516d4fbf351e63e3d11a0773d56e-7ff6Dev.html
+    private function getVideoCodecId():Number{
+      log("videoCodec", this.options.videoCodec);
+
+      switch (this.options.videoCodec) {
+        case "Sorensen":
+          return 2;
+        case "H264Avc":
+          return 7;
+      }
+      return -1;
     }
 
     private function onCameraStatus(event:StatusEvent):void {
@@ -381,6 +422,7 @@ package {
         // set the initial timer
         this._recordStartTime = getTimer()
         this.netStream.publish(this.options.streamName);
+        sendMetaData();
 
         if (this.options.embedTimecode) {
           trace('embedding recording timecode');
