@@ -336,8 +336,6 @@ package {
         this.netStream = new NetStream(this.connection);
         this.netStream.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus, false, 0, true);
 
-        sendMetaData();
-
         this.netStream.attachCamera(this.camera);
         this.netStream.attachAudio(this.microphone);
         this.netStream.videoStreamSettings = getVideoStreamSettings();
@@ -413,6 +411,9 @@ package {
 
         case "NetStream.Publish.Start":
           this._isPublishing = true;
+          // send metadata immediately after Publish.Start
+          // https://forums.adobe.com/thread/629972?tstart=0
+          sendMetaData();
           emit({kind: "connect", code: 201, message: "Publishing started."})
           break;
 
