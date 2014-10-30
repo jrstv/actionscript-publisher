@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" />
+    <meta http-equiv="Content-type" content="text/html; charset=us-ascii" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <meta name="description" content="" />
+
+    <title>ActionScript player</title>
+
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" media="screen" rel="stylesheet" type="text/css" />
+    <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" media="screen" rel="stylesheet" type="text/css" />
+    <link href="//fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,300italic,400italic,700italic|Play:400,700|Oswald:300|Raleway:100,300" media="screen" rel="stylesheet" type="text/css" />
+    <link rel="shortcut icon" href="https://www.cine.io/images/cine-icon.png" />
+
+    <style type="text/css">
+    input {
+      width: 100%;
+    }
+
+    button {
+      margin-top: 1em;
+    }
+
+    #player > h3 {
+      text-align: center;
+    }
+
+    #status {
+      color: blue;
+      margin-bottom: 1em;
+    }
+    #player{
+      outline: 1px dotted red;
+    }
+    </style>
+  </head>
+
+  <body>
+
+    <div class="container">
+
+      <div class="row preview">
+        <div id="name" class="col-md-12">
+          <h2 class="">Live-streaming from the Browser</h2>
+        </div>
+      </div>
+
+      <div class="row">
+        <div id="status" class="col-md-12"></div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4">
+
+          <form id="player-inputs" class="form-horizontal">
+            <div class="control-group advanced" _style="display: none;">
+              <label class="control-label" for="serverUrl">RTMP URL:</label>
+              <div class="controls">
+                <input type="text" id="serverUrl" name="serverUrl" value="rtmp://fml.cine.io/20C45E/cines">
+              </div>
+            </div>
+
+            <div class="control-group advanced" _style="display: none;">
+              <label class="control-label" for="streamName">Stream Name</label>
+              <div class="controls">
+                <input type="text" id="streamName" name="streamName" value="bkcFcqG0V?adbe-live-event=bkcFcqG0V">
+              </div>
+            </div>
+            <div class="control-group">
+              <div class="controls">
+                <button class="col-md-3 btn btn-success play-btn">Play</button>
+              </div>
+            </div>
+
+          </form>
+        </div>
+        <div class="col-md-7 col-md-offset-1">
+          <div id="player">
+            <h3>If your browser supports streaming, you'll<br>see the recorded video here.</h3>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
+
+    <script type="text/javascript">
+
+      // function startPublishing(event){
+      //   if(event){ event.preventDefault();}
+      //   console.log("starting")
+      //   var
+      //     player = $('#player')[0]
+      //     , options = getOptions()
+
+      //   player.setOptions(options)
+      //   player.start()
+      // }
+
+      function getOptions(){
+        var
+          $form = $('form#player-inputs')
+          , fps = parseInt($form.find('#streamFPS').val())
+          , intervalSecs = parseInt($form.find('#keyFrameInterval').val());
+
+        return {
+              serverURL: $form.find('#serverUrl').val()
+            , streamName: $form.find('#streamName').val()
+          }
+      }
+
+    window.play = function(streamUrl, streamName){
+      player = $('#player')[0];
+      player.setOptions({streamUrl: streamUrl, streamName: streamName});
+      player.play();
+    }
+
+
+    $(function() {
+
+      var swfVersionStr = "11.4.0"
+        , xiSwfUrlStr = "playerProductInstall.swf"
+        , flashvars = {}
+        , params = {}
+        , attributes = {}
+
+      params.allowscriptaccess = "sameDomain"
+      params.allowfullscreen = "true"
+      attributes.id = "player"
+      attributes.name = "player"
+      attributes.align = "middle"
+      swfobject.embedSWF(
+        "player.swf", "player", "640", "400",
+        swfVersionStr, xiSwfUrlStr,
+        flashvars, params, attributes,
+        function(embedEvent) {
+          if (embedEvent.success) {
+            // need to wait a bit until initialization finishes
+            setTimeout(function() {
+              updateStatus("setting options on player.")
+              embedEvent.ref.setOptions({
+                jsLogFunction: "console.log",
+                jsEmitFunction: "handleEmit" }
+              )
+            }, 2000)
+            updateStatus("embedded player.")
+          }
+        }
+      )
+
+      $('.play-btn').on('click', function(event) {
+        event.preventDefault();
+        updateStatus("playing player.")
+        player = $('#player')[0];
+        player.setOptions(getOptions());
+        player.play();
+      })
+
+      // $('.preview-btn').on('click', function(event) {
+      //   event.preventDefault()
+      //   var
+      //     player = $('#player')[0],
+      //     options = getOptions()
+
+      //   player.setOptions(options)
+      //   player.preview()
+      // })
+
+      // $('.stop-btn').on('click', function(event) {
+      //   event.preventDefault()
+      //   var player = $('#player')[0]
+      //   player.stop()
+      // })
+
+    });
+    function handleEmit(event) {
+      switch(event.kind) {
+        case "connect":
+        case "disconnect":
+        case "publish":
+        case "status":
+        case "error":
+          console.log("got event", event)
+          updateStatus(event.message)
+          break
+        default:
+          console.log(event)
+      }
+      // if (event.kind == 'disconnect'){
+      //   startPublishing();
+      // }
+    }
+    function updateStatus(message) {
+      var $statusDiv = $('#status')
+      $statusDiv.text(message)
+    }
+    </script>
+
+
+  </body>
+</html>
