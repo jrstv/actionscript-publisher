@@ -52,7 +52,7 @@ package {
     , jsLogFunction: "console.log"
     , jsEmitFunction: null
     , embedTimecode: true
-    , timecodeFrequency: 100
+    , timecodeFrequency: 1000
     };
 
     /**
