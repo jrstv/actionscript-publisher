@@ -422,7 +422,6 @@ package {
         // set the initial timer
         this._recordStartTime = getTimer()
         this.netStream.publish(this.options.streamName);
-        sendMetaData();
 
         if (this.options.embedTimecode) {
           trace('embedding recording timecode');
