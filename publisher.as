@@ -122,7 +122,7 @@ package {
     }
 
     public function getInfo():Object{
-      return {version: "0.1.2"}
+      return {version: "0.2.0"}
     }
 
     /**
