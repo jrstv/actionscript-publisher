@@ -290,8 +290,8 @@ package {
       videoStreamSettings.setKeyFrameInterval(this.options.keyFrameInterval);
       videoStreamSettings.setMode(this.options.streamWidth, this.options.streamHeight, this.options.streamFPS);
 
-      log("Video Codec:", this.netStream.videoStreamSettings.codec);
-      if (this.netStream.videoStreamSettings.codec == "H264Avc") {
+      log("Video Codec:", videoStreamSettings.codec);
+      if (videoStreamSettings.codec == "H264Avc") {
         log("H264 Profile:", this.options.h264Profile);
         log("H264 Level:", this.options.h264Level);
       }
@@ -361,6 +361,10 @@ package {
       metaData.fps = this.options.streamFPS;
       metaData.audiocodecid = this.getAudioCodecId();
       metaData.videocodecid = this.getVideoCodecId();
+      if (this.netStream.videoStreamSettings.codec == "H264Avc") {
+        metaData.profile = this.options.h264Profile;
+        metaData.level = this.options.h264Level;
+      }
       emit({kind: "status", code: 103, message: "Sending stream metadata.", metaData: metaData});
 
       this.netStream.send( "@setDataFrame", "onMetaData", metaData);
