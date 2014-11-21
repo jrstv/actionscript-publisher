@@ -248,11 +248,11 @@
         case "publish":
         case "status":
         case "error":
-          console.log("got event", event)
+          console.log("got event", new Date, event)
           updateStatus(event.message)
           break
         default:
-          console.log(event)
+          console.log(new Date, event)
       }
       // if (event.kind == 'disconnect'){
       //   startPublishing();
