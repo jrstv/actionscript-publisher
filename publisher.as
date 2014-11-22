@@ -19,9 +19,7 @@ package {
   import flash.media.SoundCodec;
   import mx.utils.ObjectUtil;
   import flash.utils.getTimer;
-  import flash.utils.setInterval;
   import flash.utils.setTimeout;
-  import flash.utils.clearInterval;
   import flash.system.Security;
   import flash.system.SecurityPanel;
 
@@ -58,7 +56,6 @@ package {
     /**
      * the timestamp of when the recording started.
      */
-    protected var _timecodeIntervalHandle:uint;
     protected var _recordStartTime:uint;
     protected var _isPreviewing:Boolean = false;
     protected var _isPublishing:Boolean = false;
@@ -102,6 +99,7 @@ package {
       var msTimeStamp:Number = now.getTime();
       // log('embedTimecode: offset - ' + timeCode.toString() + " time - "+ msTimeStamp);
       sendTextData({ timecode: timeCode, timestamp: msTimeStamp });
+      setTimeout(embedTimecode, this.options.timecodeFrequency);
     }
 
 
@@ -222,9 +220,6 @@ package {
     }
 
     public function stop():void {
-      if (this._timecodeIntervalHandle){
-        clearInterval(this._timecodeIntervalHandle);
-      }
       log("closing net stream");
       if (this.netStream) {
         this.netStream.close();
@@ -429,7 +424,7 @@ package {
 
         if (this.options.embedTimecode) {
           trace('embedding recording timecode');
-          this._timecodeIntervalHandle = setInterval(embedTimecode, this.options.timecodeFrequency);
+          setTimeout(embedTimecode, this.options.timecodeFrequency);
         }
       } catch (err:Error) {
         log("ERROR:", err);
