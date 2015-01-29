@@ -73,6 +73,7 @@ package {
 
       stage.align = StageAlign.TOP_LEFT;
       stage.scaleMode = StageScaleMode.NO_SCALE;
+      stage.addEventListener(Event.RESIZE, this.onResize)
 
       if (ExternalInterface.available) {
         ExternalInterface.addCallback("trace", this.log);
@@ -90,6 +91,11 @@ package {
       } else {
         log("External interface not available.");
       }
+    }
+
+    private function onResize(e:Event):void {
+      log("Resizing video", stage.stageWidth, 'x', stage.stageHeight);
+      createVideo();
     }
 
     // https://github.com/KAPx/krecord/compare/KAPx:kapx...kapx-rtmp-timecode-events
@@ -196,16 +202,25 @@ package {
       return true;
     }
 
+    // This removes the existing video and
+    // and recreates a new video
+    public function createVideo():void {
+      var videoDimensions:Object = getVideoDimensions();
+      log("Video dimensions:", videoDimensions.width, "x", videoDimensions.height);
+      this.video = new Video(videoDimensions.width, videoDimensions.height);
+      // remove video if already exists
+      if (this.numChildren > 0) { this.removeChildAt(0); }
+      this.addChild(this.video);
+
+      // attach the camera to the video
+      this.video.attachCamera(camera);
+    }
+
     public function preview():Boolean {
       emit({kind: "status", code: 101, message: "Previewing."});
       if(this._isPreviewing){
         return false;
       }
-      var videoDimensions:Object = getVideoDimensions();
-      log("Video dimensions:", videoDimensions.width, "x", videoDimensions.height);
-      this.video = new Video(videoDimensions.width, videoDimensions.height);
-      if (this.numChildren > 0) { this.removeChildAt(0); }
-      this.addChild(this.video);
 
       // set up the camera and video object
       this.microphone = getMicrophone();
@@ -213,8 +228,8 @@ package {
       this._hasMediaAccess = !camera.muted;
       camera.addEventListener(StatusEvent.STATUS, onCameraStatus);
 
-      // attach the camera to the video
-      this.video.attachCamera(camera);
+      createVideo();
+
       this._isPreviewing = true;
       return true;
     }
