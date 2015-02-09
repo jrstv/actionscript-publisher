@@ -280,6 +280,7 @@ package {
     private function getCamera():Camera {
       var camera:Camera = Camera.getCamera();
       camera.setMode(this.options.streamWidth, this.options.streamHeight, this.options.streamFPS, true);
+      // http://help.adobe.com/en_US/AS2LCR/Flash_10.0/help.html?content=00000880.html
       camera.setQuality(this.options.bandwidth, this.options.videoQuality);
       camera.setKeyFrameInterval(this.options.keyFrameInterval);
 
