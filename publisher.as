@@ -130,7 +130,12 @@ package {
       emit({
         kind: "status",
         code: 110,
-        bandwidth: (info.currentBytesPerSecond / 1024),
+        bandwidth: {
+          audio: (info.audioBytesPerSecond / 1024),
+          video: (info.videoBytesPerSecond / 1024),
+          data: (info.dataBytesPerSecond / 1024),
+          total: (info.currentBytesPerSecond / 1024)
+        },
         fps: this.camera.currentFPS,
         droppedFrames: info.droppedFrames,
         timecode: timeCode,
@@ -157,7 +162,7 @@ package {
     }
 
     public function getInfo():Object{
-      return {version: "0.2.4"}
+      return {version: "0.2.5"}
     }
 
     /**
