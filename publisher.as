@@ -38,8 +38,10 @@ package {
     , streamHeight: 720
     , streamFPS: 30
     , keyFrameInterval: 120
-    , bandwidth: 2048 * 1024 * 8          // bps
-    , videoQuality: 75                    // % percentage
+    // http://help.adobe.com/en_US/AS2LCR/Flash_10.0/help.html?content=00000880.html
+    , bandwidth: 2048 * 1024              // BYTES per second (not bits per second)
+    , videoQuality: 0                     // % percentage
+
     , videoCodec: "Sorensen"              // options: Sorensen|H264Avc
     , h264Profile: H264Profile.MAIN       // only valid when videoCodec is H264Avc
     , h264Level: H264Level.LEVEL_3_1      // only valid when videoCodec is H264Avc
@@ -51,6 +53,7 @@ package {
     , jsEmitFunction: null
     , embedTimecode: true
     , timecodeFrequency: 1000
+    , favorArea: false // http//help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/media/Camera.html#setMode()
     };
 
     /**
@@ -279,7 +282,8 @@ package {
 
     private function getCamera():Camera {
       var camera:Camera = Camera.getCamera();
-      camera.setMode(this.options.streamWidth, this.options.streamHeight, this.options.streamFPS, true);
+      // http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/media/Camera.html#setMode()
+      camera.setMode(this.options.streamWidth, this.options.streamHeight, this.options.streamFPS, this.options.favorArea);
       // http://help.adobe.com/en_US/AS2LCR/Flash_10.0/help.html?content=00000880.html
       camera.setQuality(this.options.bandwidth, this.options.videoQuality);
       camera.setKeyFrameInterval(this.options.keyFrameInterval);
