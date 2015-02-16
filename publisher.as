@@ -11,6 +11,7 @@ package {
   import flash.media.Video;
   import flash.net.NetConnection;
   import flash.net.NetStream;
+  import flash.net.NetStreamInfo;
   import flash.net.ObjectEncoding;
   import flash.media.VideoStreamSettings;
   import flash.media.H264VideoStreamSettings;
@@ -53,6 +54,7 @@ package {
     , jsEmitFunction: null
     , embedTimecode: true
     , timecodeFrequency: 1000
+    , statusFrequency: 1000
     , favorArea: false // http//help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/media/Camera.html#setMode()
     };
 
@@ -103,12 +105,38 @@ package {
 
     // https://github.com/KAPx/krecord/compare/KAPx:kapx...kapx-rtmp-timecode-events
     private function embedTimecode():void {
+      if (!this._isPublishing){
+        return;
+      }
       var timeCode:uint = getTimer() - _recordStartTime;
       var now:Date = new Date();
       var msTimeStamp:Number = now.getTime();
       // log('embedTimecode: offset - ' + timeCode.toString() + " time - "+ msTimeStamp);
       sendTextData({ timecode: timeCode, timestamp: msTimeStamp });
       setTimeout(embedTimecode, this.options.timecodeFrequency);
+    }
+
+    private function emitStatus():void {
+      if (!this._isPublishing){
+        return;
+      }
+      // http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/net/NetStreamInfo.html
+      var info:NetStreamInfo = this.netStream.info;
+
+      var timeCode:uint = getTimer() - _recordStartTime;
+      var now:Date = new Date();
+      var msTimeStamp:Number = now.getTime();
+
+      emit({
+        kind: "status",
+        code: 110,
+        bandwidth: (info.currentBytesPerSecond / 1024),
+        fps: this.camera.currentFPS,
+        droppedFrames: info.droppedFrames,
+        timecode: timeCode,
+        timestamp: msTimeStamp
+      });
+      setTimeout(emitStatus, this.options.statusFrequency);
     }
 
 
@@ -446,6 +474,7 @@ package {
           trace('embedding recording timecode');
           setTimeout(embedTimecode, this.options.timecodeFrequency);
         }
+        setTimeout(emitStatus, this.options.statusFrequency);
       } catch (err:Error) {
         log("ERROR:", err);
         emit({kind: "error", message: err});
