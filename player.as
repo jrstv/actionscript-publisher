@@ -121,6 +121,8 @@ package
 
     private function playStream():void{
       try {
+        // subscrube to the rtmp stream (necessary for akamai, edgecast, +more?)
+        this.connection.call("FCSubscribe", null, this.options.streamName);
 
         _stream = new NetStream(connection);
         _stream.play(this.options.streamName);
